@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Inter, Space_Grotesk, Instrument_Serif, JetBrains_Mono } from "next/font/google";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import CustomCursor from "@/components/ui/CustomCursor";
 import ScrollProgress from "@/components/ui/ScrollProgress";
 
@@ -55,6 +56,7 @@ export default function RootLayout({
         <CustomCursor />
         <ScrollProgress />
         {children}
+        <SpeedInsights />
       </body>
     </html>
   );

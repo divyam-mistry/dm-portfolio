@@ -1,21 +1,19 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { Inter, Space_Grotesk, Instrument_Serif, JetBrains_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
-import CustomCursor from "@/components/ui/CustomCursor";
-import ScrollProgress from "@/components/ui/ScrollProgress";
 
-const inter = Inter({
+const geist = Geist({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-inter",
+  variable: "--font-geist",
 });
 
-const spaceGrotesk = Space_Grotesk({
+const geistMono = Geist_Mono({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-space-grotesk",
+  variable: "--font-geist-mono",
 });
 
 const instrumentSerif = Instrument_Serif({
@@ -26,23 +24,23 @@ const instrumentSerif = Instrument_Serif({
   variable: "--font-instrument-serif",
 });
 
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-jetbrains-mono",
-});
-
 export const metadata: Metadata = {
-  title: "Divyam Mistry | Full Stack Developer",
+  title: "Divyam Mistry — Software Engineer",
   description:
-    "Portfolio of Divyam Mistry - Full Stack Developer specializing in React, Node.js, Flutter, and modern web technologies",
-  keywords: ["Divyam Mistry", "Full Stack Developer", "React", "Node.js", "Flutter", "Portfolio", "Software Engineer"],
+    "Divyam Mistry is a software engineer at Strique building streaming AI chat, AI-generated reports, credit billing and product-feed pipelines.",
+  keywords: ["Divyam Mistry", "Software Engineer", "Strique", "Next.js", "Python", "FastAPI", "Go", "Portfolio"],
   authors: [{ name: "Divyam Mistry" }],
 };
 
 export const viewport: Viewport = {
-  themeColor: "#08090a",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f4f1ea" },
+    { media: "(prefers-color-scheme: dark)", color: "#11110f" },
+  ],
 };
+
+// Runs before paint so the stored/system theme never flashes.
+const themeScript = `(function(){try{var t=localStorage.getItem('theme');if(!t){t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}document.documentElement.dataset.theme=t}catch(e){}})()`;
 
 export default function RootLayout({
   children,
@@ -50,12 +48,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="scroll-smooth">
-      <body
-        className={`${inter.variable} ${spaceGrotesk.variable} ${instrumentSerif.variable} ${jetbrainsMono.variable} font-sans antialiased`}
-      >
-        <CustomCursor />
-        <ScrollProgress />
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
+      <body className={`${geist.variable} ${geistMono.variable} ${instrumentSerif.variable} font-sans antialiased`}>
         {children}
         <SpeedInsights />
         <Analytics />

@@ -4,8 +4,14 @@ import { motion, type Variants } from "framer-motion";
 import { type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
+const TAGS = {
+  div: motion.div,
+  li: motion.li,
+} as const;
+
 interface FadeInProps {
   children: ReactNode;
+  as?: keyof typeof TAGS;
   className?: string;
   delay?: number;
   duration?: number;
@@ -15,12 +21,14 @@ interface FadeInProps {
 
 export default function FadeIn({
   children,
+  as = "div",
   className,
   delay = 0,
-  duration = 0.6,
-  y = 24,
+  duration = 0.8,
+  y = 20,
   once = true,
 }: FadeInProps) {
+  const MotionTag = TAGS[as];
   const variants: Variants = {
     hidden: { opacity: 0, y },
     visible: {
@@ -31,14 +39,14 @@ export default function FadeIn({
   };
 
   return (
-    <motion.div
+    <MotionTag
       className={cn(className)}
       initial="hidden"
       whileInView="visible"
-      viewport={{ once, margin: "-10% 0px" }}
+      viewport={{ once, margin: "-8% 0px" }}
       variants={variants}
     >
       {children}
-    </motion.div>
+    </MotionTag>
   );
 }

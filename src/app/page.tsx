@@ -1,27 +1,27 @@
-import Navigation from "@/components/Navigation";
-import HeroSection from "@/components/HeroSection";
-import AboutSection from "@/components/AboutSection";
-import ExperienceSection from "@/components/ExperienceSection";
-import ProjectsSection from "@/components/ProjectsSection";
-import SkillsSection from "@/components/SkillsSection";
-import AchievementsSection from "@/components/AchievementsSection";
-import CertificationsSection from "@/components/CertificationsSection";
-import EducationSection from "@/components/EducationSection";
-import ContactSection from "@/components/ContactSection";
+import RunningHeader from "@/components/RunningHeader";
+import Hero from "@/components/Hero";
+import Work from "@/components/Work";
+import ShipLog from "@/components/ShipLog";
+import Writing from "@/components/Writing";
+import Experience from "@/components/Experience";
+import Toolkit from "@/components/Toolkit";
+import Record from "@/components/Record";
+import Contact from "@/components/Contact";
 
 export default function Home() {
   return (
-    <main className="relative min-h-screen z-10">
-      <Navigation />
-      <HeroSection />
-      <AboutSection />
-      <ExperienceSection />
-      <ProjectsSection />
-      <SkillsSection />
-      <AchievementsSection />
-      <CertificationsSection />
-      <EducationSection />
-      <ContactSection />
-    </main>
+    <>
+      <RunningHeader />
+      <main>
+        <Hero />
+        <Work />
+        <ShipLog />
+        <Writing />
+        <Experience />
+        <Toolkit />
+        <Record />
+      </main>
+      <Contact />
+    </>
   );
 }

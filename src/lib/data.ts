@@ -76,6 +76,8 @@ export interface Stat {
   label: string;
 }
 
+export const siteUrl = "https://divyam-mistry.vercel.app";
+
 export const profile = {
   name: "Divyam Mistry",
   role: "Software Engineer",
@@ -85,7 +87,31 @@ export const profile = {
   baseShort: "MUM, IND",
   about:
     "I'm a full-stack engineer at Strique, where I've spent two and a half years on an agentic AI marketing platform: streaming chat, AI-generated reports, credit billing and product-feed pipelines. Before that I shipped GST compliance features to India Compliance, an open-source app for ERPNext, and built payment integrations and booking webhooks at Simulas. I care about systems that hold up under real load, and interfaces that make them feel effortless.",
-  shippedAt: ["Strique", "Resilient Tech", "ERPNext", "Simulas", "Nearlikes"],
+  /**
+   * Logos render as single-colour masks, so only their alpha matters. `displayHeight` balances optical size.
+   * `wordmark` sets the name in type beside marks whose source files have no legible lettering.
+   */
+  shippedAt: [
+    { name: "Strique", logo: "/logos/strique.svg", width: 112, height: 36, displayHeight: 32 },
+    { name: "Resilient Tech", logo: "/logos/resilient.png", width: 454, height: 97, displayHeight: 26 },
+    { name: "ERPNext", logo: "/logos/erpnext.svg", width: 116, height: 20, displayHeight: 21 },
+    {
+      name: "Simulas",
+      logo: "/logos/simulas.png",
+      width: 128,
+      height: 170,
+      displayHeight: 30,
+      wordmark: "text-[13px] font-semibold uppercase tracking-[0.34em]",
+    },
+    {
+      name: "Nearlikes",
+      logo: "/logos/nearlikes.png",
+      width: 160,
+      height: 157,
+      displayHeight: 24,
+      wordmark: "text-lg font-bold tracking-[-0.03em]",
+    },
+  ],
   now: {
     company: "Strique",
     role: "Software Engineer",

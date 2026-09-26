@@ -5,7 +5,6 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { profile } from "@/lib/data";
 import { useClock } from "@/lib/hooks";
-import { cn } from "@/lib/utils";
 
 const GREETINGS = ["Hello", "નમસ્તે", "Hola", "नमस्ते", "Bonjour", "こんにちは", "Ciao"];
 
@@ -47,23 +46,24 @@ function Greeting() {
   );
 }
 
-function Wordmark({ name }: { name: string }) {
-  // Typographic stand-ins for each logo, so the row reads like the reference's logo strip.
-  const styles: Record<string, string> = {
-    Strique: "text-xl font-bold tracking-[-0.04em]",
-    "Resilient Tech": "text-lg font-semibold tracking-[-0.03em]",
-    ERPNext: "font-mono text-base font-medium tracking-tight",
-    Simulas: "text-xs font-semibold uppercase tracking-[0.42em]",
-    Nearlikes: "text-lg font-extrabold italic tracking-[-0.03em]",
-  };
+type Company = (typeof profile.shippedAt)[number];
+
+function Logo({ company }: { company: Company }) {
+  const { name, logo, width, height, displayHeight } = company;
+  const mask = `url(${logo}) center / contain no-repeat`;
   return (
-    <span
-      className={cn(
-        "whitespace-nowrap text-faint transition-colors duration-300 hover:text-ink-soft",
-        styles[name] ?? "text-lg font-semibold",
+    <span className="flex items-center gap-2 text-faint transition-colors duration-300 hover:text-ink-soft">
+      <span
+        role="img"
+        aria-label={name}
+        className="block shrink-0 bg-current"
+        style={{ height: displayHeight, aspectRatio: `${width} / ${height}`, mask, WebkitMask: mask }}
+      />
+      {"wordmark" in company && (
+        <span aria-hidden className={company.wordmark}>
+          {name}
+        </span>
       )}
-    >
-      {name}
     </span>
   );
 }
@@ -115,9 +115,9 @@ export default function Hero() {
       <motion.div {...rise(0.4)} className="mt-20 sm:mt-24">
         <p className="font-mono text-[11px] tracking-[0.2em] text-muted uppercase">Shipped at</p>
         <div className="mt-6 grid grid-cols-2 items-center gap-x-6 gap-y-6 sm:grid-cols-5">
-          {profile.shippedAt.map((name) => (
-            <div key={name} className="flex sm:justify-center">
-              <Wordmark name={name} />
+          {profile.shippedAt.map((company) => (
+            <div key={company.name} className="flex sm:justify-center">
+              <Logo company={company} />
             </div>
           ))}
         </div>

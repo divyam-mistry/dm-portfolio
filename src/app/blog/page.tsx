@@ -7,6 +7,8 @@ export const metadata: Metadata = {
   title: "Field notes — Divyam Mistry",
   description:
     "Engineering write-ups from production: streaming payload diets, OOM post-mortems, webhook races, long-lived SSE streams and CI security.",
+  alternates: { canonical: "/blog" },
+  openGraph: { url: "/blog", title: "Field notes — Divyam Mistry" },
 };
 
 export default function BlogIndex() {

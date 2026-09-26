@@ -23,7 +23,15 @@ export async function generateMetadata({
   return {
     title: `${post.title} — Divyam Mistry`,
     description: post.dek,
-    openGraph: { title: post.title, description: post.dek, type: "article" },
+    alternates: { canonical: `/blog/${post.slug}` },
+    openGraph: {
+      title: post.title,
+      description: post.dek,
+      type: "article",
+      url: `/blog/${post.slug}`,
+      publishedTime: `${post.date}-01`,
+      authors: ["Divyam Mistry"],
+    },
   };
 }
 

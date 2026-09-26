@@ -267,6 +267,216 @@ export const blogPosts: BlogPost[] = [
       },
     ],
   },
+  {
+    slug: "a-document-is-a-tool-call",
+    title: "A document is a tool call",
+    dek: "The report canvas got reliable the day generation stopped being part of the chat answer and became a validated tool call.",
+    date: "2026-07",
+    when: "Jul 2026",
+    kind: "feat",
+    tags: ["Python", "LiteLLM", "JSON Schema", "React"],
+    body: [
+      {
+        type: "p",
+        text: "Chat is a terrible medium for a fifty-row answer. Our assistant does marketing analytics, so the questions that matter come back as comparisons, trends and breakdowns — exactly the material that turns into porridge when it's streamed as prose with a few markdown tables. So we built a report canvas: a side panel that renders data-heavy answers as structured documents, with KPI cards, charts, tables, tabs and diagrams, generated entirely by the model and then owned by the user.",
+      },
+      {
+        type: "p",
+        text: "The first version generated the document as part of the chat response itself. It demoed beautifully and creaked in production. When a generation failed midway, users got half a document welded to half an answer. There was no clean boundary for validating the output, no natural place to version it, and every formatting quirk of the model leaked straight onto the page.",
+      },
+      { type: "h2", text: "Make it a tool" },
+      {
+        type: "p",
+        text: "The rework moved generation into a dedicated tool call. The model decides a report is warranted and calls the tool with the document as structured content — a JSON spec of typed blocks, not markup. That one boundary bought three properties at once. Schema validation: a malformed document fails at generation time with a specific error, instead of rendering as something broken in front of the user. Versioned edits: the model modifies an explicit base version, so an edit is a new version rather than a mutation. And a hard time budget: a generation that cannot finish fails cleanly at the ceiling instead of hanging a conversation.",
+      },
+      {
+        type: "code",
+        lang: "json",
+        code: `{
+  "blocks": [
+    { "type": "kpi_row",
+      "items": [{ "label": "Spend", "value": "…", "delta": "−12%" }] },
+    { "type": "chart", "id": "c1", "kind": "line", "series_ref": "s1" },
+    { "type": "table", "id": "t1", "columns": ["…"], "rows_ref": "r1" }
+  ]
+}`,
+      },
+      {
+        type: "p",
+        text: "The spec is also a division of labour: the model owns content, the renderer owns presentation. The model never chooses fonts, spacing or layout — it says “this is a KPI row, this is a line chart over that series” and the canvas decides what that looks like. Which meant we could later add lazy-loaded report cards, a full-screen mode and new export targets without touching generation at all, and tune generation without breaking a single rendered document.",
+      },
+      {
+        type: "ul",
+        items: [
+          "A schema moves failure earlier, and earlier failure is cheaper: a validation error at generation time beats a broken page in front of a user.",
+          "Contracts beat conventions. The prompt can ask for well-formed documents; only the validator can insist.",
+          "Separate content from presentation even when one model produces both — it is the seam every future feature will need.",
+          "A hard time budget turns an unbounded worst case into a bounded, reportable one.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "the-dangling-reference",
+    title: "The dangling reference",
+    dek: "Half of our recent report-generation failures turned out to be one bug: the model referring to things it never created.",
+    date: "2026-08",
+    when: "Aug 2026",
+    kind: "fix",
+    tags: ["Python", "LLM", "JSON validation"],
+    body: [
+      {
+        type: "p",
+        text: "When we sat down to fix the report canvas's reliability, the first step was boring bookkeeping: we took the recent generation failures and grouped them by root cause instead of by symptom. Fourteen failures, and seven of them were the same bug wearing different clothes — a dangling reference. A chart pointing at a data series that was never emitted. A block referring to an id that had been renamed three hundred lines earlier, or dropped in an edit, or simply invented.",
+      },
+      {
+        type: "p",
+        text: "This is a very LLM-shaped failure. Models are excellent at local coherence — any given block looks right — and unreliable at referential integrity across a long structured document. By the time the model writes block forty of a spec, the id it made up in block three is a distant memory it may misremember with total confidence. Ask for prose and nobody notices. Ask for a machine-readable document where blocks reference each other, and every lapse becomes a render failure.",
+      },
+      { type: "h2", text: "Validate like a linker" },
+      {
+        type: "p",
+        text: "The fix was to treat the spec the way a linker treats object files: every symbol that is referenced must resolve, or the document does not ship. After schema validation, a pass walks every reference field in the document and checks it against the set of ids that actually exist. It is a cheap, total check — unlike “is this report good?”, “does `series_ref: s1` resolve?” has a definite answer — and it catches the whole class, not just the instances we had seen.",
+      },
+      {
+        type: "p",
+        text: "A resolvable failure also enables a sane recovery: a generation that fails the reference check can be repaired or retried with a specific complaint, rather than surfacing to the user as a broken page or a vague apology.",
+      },
+      { type: "h2", text: "The rest of the failure budget" },
+      {
+        type: "p",
+        text: "The same reliability pass picked up the next causes on the list. Page limits that users set became enforced constraints instead of polite requests. And reporting date windows were made deterministic — a phrase like “last month” is resolved to concrete dates once, server-side, so the same question produces the same window every time instead of whatever the model felt that day.",
+      },
+      {
+        type: "ul",
+        items: [
+          "Count failures by root cause, not by symptom. Ours looked like fourteen problems and were really about four — and half the pile was one bug.",
+          "Referential integrity is checkable even when quality isn't. Validate everything that has a definite answer; save human judgement for what doesn't.",
+          "Treat model output like untrusted input to a compiler: parse, validate, link — then render.",
+          "Every input the model doesn't control is one less way two runs can differ. Determinism is something you deliberately take away from the model.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "ai-writes-the-first-draft",
+    title: "The AI writes the first draft, you keep the pen",
+    dek: "Generated reports became documents people trust only once they could edit them, version them and take them back.",
+    date: "2026-09",
+    when: "Sep 2026",
+    kind: "feat",
+    tags: ["React", "Tiptap", "FastAPI", "PostgreSQL"],
+    body: [
+      {
+        type: "p",
+        text: "A generated report is a first draft, no matter how good the generation gets. The numbers may be right and the structure sound, and the user will still want to soften a sentence, cut a section, or add the one line of context the model could not know — because the report is going to their client or their boss with their name near it. For a while our canvas had no answer to that except the regeneration lottery: ask again, hope the next document keeps everything you liked and fixes the one thing you didn't.",
+      },
+      {
+        type: "p",
+        text: "The other escape hatch was worse: copy the content out into a real editor, at which point the structure — the charts, the KPI cards, the live tables — dies, and the canvas has demoted itself to a clipboard. If the document is the product, it has to be editable where it lives. So we made it one: in-panel rich-text editing, version history with restore, author attribution and a full-screen mode.",
+      },
+      { type: "h2", text: "Versions are what make editing safe" },
+      {
+        type: "p",
+        text: "The mechanism underneath is the same one that made generation reliable: versions. Every change — the model's or a person's — produces a new version against an explicit base, and any version can be restored. That single property removes the fear from both directions of editing. A person can rework a generated document knowing the original is one click away, and the model can be asked to revise again without silently trampling human work, because its edit is just another version in the chain, attributed to its author.",
+      },
+      {
+        type: "p",
+        text: "Attribution sounds cosmetic and isn't. When a document has two kinds of author, “who wrote this?” is a trust question — a person deciding whether to forward a report wants to know which parts are machine-drafted and which parts a colleague already reviewed. Recording authorship per version made that answerable instead of vibes.",
+      },
+      { type: "h2", text: "Whose document is it?" },
+      {
+        type: "p",
+        text: "The deeper shift was in how we thought about ownership. Before editing, a report belonged to the model, and the user was its audience. The first time a person touches the document, ownership flips — it is theirs now, and the model is a collaborator who drafted it. Most product decisions fell out of taking that flip seriously: edits must never be lost to a regeneration, history must show hands as well as changes, and restoring the past must be as easy as making the future.",
+      },
+      {
+        type: "ul",
+        items: [
+          "Generated artefacts need a lifecycle, not just a render. If people will send it, sign it or defend it, they need to shape it first.",
+          "Version history is trust infrastructure: people edit fearlessly exactly when undo is guaranteed.",
+          "When two kinds of author share a document, record which hand wrote what — attribution is a feature, not metadata.",
+          "The regeneration lottery is not an editing story. “Ask again” discards everything the user already approved.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "one-spec-five-surfaces",
+    title: "One spec, five surfaces",
+    dek: "The same JSON document renders in the app, prints to PDF, exports to DOCX and opens in Google Docs, Sheets, Word and Excel.",
+    date: "2026-08",
+    when: "Aug 2026",
+    kind: "feat",
+    tags: ["Playwright", "python-docx", "OAuth 2.0", "Google Drive API", "Microsoft Graph"],
+    body: [
+      {
+        type: "p",
+        text: "A report that lives only inside a chat panel is half a product. Reports exist to leave — they get attached to emails, dropped into decks, filed with clients, edited by people who will never open our app. So the canvas had to meet documents where documents actually live, and that meant one source of truth wearing five different bodies: the interactive panel, PDF, DOCX, Google Docs and Sheets, and Word and Excel.",
+      },
+      {
+        type: "p",
+        text: "The thing that made this tractable is that a canvas document is a JSON spec of typed blocks, not markup. Every export is a renderer over the same spec. The PDF path drives a headless browser with Playwright, reusing the same rendering that draws the panel, so what you print is what you saw. The DOCX path builds a native document with python-docx, block by block, because a Word file is not a web page and pretending otherwise produces documents that look pasted. The Google and Microsoft paths go over OAuth and create real files in the user's own account.",
+      },
+      { type: "h2", text: "Every surface lies differently" },
+      {
+        type: "p",
+        text: "The discipline was resisting the shortcut of converting one output into another. Chained conversions compound each format's lies: pagination exists in PDF but not in a panel; DOCX has styles but no CSS; a spreadsheet wants your tables as data, not your layout as decoration. Each surface gets its own renderer from the spec, and each renderer is honest about what its format cannot say — instead of one canonical export degraded four ways.",
+      },
+      { type: "h2", text: "Exports that stay put" },
+      {
+        type: "p",
+        text: "One small decision did outsized work: re-exporting updates the same external file instead of minting a copy. Report v3 lands in the same Google Doc that v2 created, so the link a user already shared quietly gets better, and nobody curates a folder of report-final-final-2. And because export-to-your-account means holding OAuth tokens, we treated ourselves as a credential custodian from day one: tokens encrypted at rest, scopes no wider than the job.",
+      },
+      {
+        type: "ul",
+        items: [
+          "Export is a renderer, not an afterthought. Each target deserves a first-class mapping from the source of truth.",
+          "Never chain conversions. Render every surface from the spec, or inherit the union of every format's compromises.",
+          "Update-in-place beats attachment sprawl: the shared link improving quietly is a feature users feel without naming.",
+          "The moment you store OAuth tokens you are in the credentials business — encrypt at rest and keep scopes narrow, before anyone asks.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "teaching-the-model-to-stop",
+    title: "Teaching the model when to stop",
+    dek: "Reports that respect a page limit, resolve dates the same way twice and lead with the finding — none of it came from asking nicely.",
+    date: "2026-09",
+    when: "Sep 2026",
+    kind: "fix",
+    tags: ["Python", "LLM", "Prompting"],
+    body: [
+      {
+        type: "p",
+        text: "Give a language model a document tool and it will write you a document — at length. Ours had a particular failure mode users noticed immediately: they would ask for a brief report and receive a sprawling one, many times the length they requested. The prompt said to respect the requested length. The model, on the whole, did not. Politeness turned out to be our enforcement mechanism, which is to say we had none.",
+      },
+      { type: "h2", text: "Enforce, don't request" },
+      {
+        type: "p",
+        text: "The fix was to reclassify the user's page limit from style guidance into a pipeline constraint. The prompt still asks — a model aimed at the right length produces better-shaped documents than one truncated after the fact — but the limit is now enforced where the document is built, not where it is requested. The general rule became one of the canvas's load-bearing principles: anything the user can set is checked by code, and the prompt is merely how we improve the odds of passing the check on the first try.",
+      },
+      { type: "h2", text: "Same question, same window" },
+      {
+        type: "p",
+        text: "The second discipline was determinism. A reporting question is almost always a question about a date range, and “last month” is exactly the kind of phrase a model will happily resolve three different ways on three runs. So the model no longer resolves it. Date windows are computed server-side, once, deterministically, and the model receives concrete dates instead of the phrase. Two identical questions now describe the same slice of the world — which sounds small until you have tried to debug a report that disagrees with its own regeneration.",
+      },
+      { type: "h2", text: "Lead with the finding" },
+      {
+        type: "p",
+        text: "The last change was editorial rather than mechanical. Models narrate: first the setup, then the method, then — eventually — the point. Busy readers work the other way round. So generated reports were restructured to lead with the finding: the headline number or conclusion first, the supporting evidence beneath it. Combined with the hard time budget on generation — a run that cannot finish fails cleanly at the ceiling instead of hanging — the canvas stopped testing its users' patience at both ends.",
+      },
+      {
+        type: "ul",
+        items: [
+          "Prompts are requests; validators are guarantees. Anything a user can configure needs an enforcer, not an aspiration.",
+          "Take determinism away from the model on purpose: resolve time, and every other resolvable input, before the model sees it.",
+          "Structure is a quality lever that costs no accuracy — the same content, finding first, reads twice as well.",
+          "Verbosity is not a personality flaw to scold out of a model; it is a constraint to engineer.",
+        ],
+      },
+    ],
+  },
 ];
 
 export const getPost = (slug: string) => blogPosts.find((p) => p.slug === slug);

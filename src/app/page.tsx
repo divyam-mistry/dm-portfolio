@@ -1,5 +1,6 @@
-import RunningHeader from "@/components/RunningHeader";
+import Nav from "@/components/Nav";
 import Hero from "@/components/Hero";
+import About from "@/components/About";
 import Work from "@/components/Work";
 import ShipLog from "@/components/ShipLog";
 import Writing from "@/components/Writing";
@@ -11,9 +12,10 @@ import Contact from "@/components/Contact";
 export default function Home() {
   return (
     <>
-      <RunningHeader />
+      <Nav />
       <main>
         <Hero />
+        <About />
         <Work />
         <ShipLog />
         <Writing />

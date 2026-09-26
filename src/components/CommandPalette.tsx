@@ -12,6 +12,8 @@ interface Command {
   group: string;
   label: string;
   hint?: string;
+  /** Extra words the search should match, e.g. the nav name of a section */
+  keywords?: string;
   run: () => void;
 }
 
@@ -39,6 +41,7 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
         group: "Go to",
         label: s.label,
         hint: `§ ${s.index}`,
+        keywords: `${s.id} ${s.nav ?? ""}`,
         run: () => jump(s.id),
       })),
       ...blogPosts.map((p) => ({
@@ -87,7 +90,7 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return commands;
-    return commands.filter((c) => `${c.label} ${c.group} ${c.hint ?? ""}`.toLowerCase().includes(q));
+    return commands.filter((c) => `${c.label} ${c.group} ${c.hint ?? ""} ${c.keywords ?? ""}`.toLowerCase().includes(q));
   }, [commands, query]);
 
   useEffect(() => {

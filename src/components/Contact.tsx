@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import Link from "next/link";
+import { ArrowUp, Check, Copy } from "lucide-react";
 import FadeIn from "@/components/ui/FadeIn";
 import { contactInfo, profile, socialLinks } from "@/lib/data";
 import { useClock } from "@/lib/hooks";
@@ -21,80 +22,68 @@ export default function Contact() {
   };
 
   return (
-    <footer id="contact" className="border-t border-rule">
-      <div className="mx-auto max-w-[1200px] px-5 pt-20 pb-10 sm:px-8 sm:pt-28">
+    <footer id="contact" className="border-t border-rule bg-paper-sunken">
+      <div className="mx-auto max-w-[1000px] px-5 pt-24 pb-10 sm:px-8 sm:pt-32">
         <FadeIn>
-          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">§ 06 — Correspondence</p>
-          <h2 className="balance mt-6 font-serif text-[clamp(3rem,9vw,8rem)] leading-[0.9] tracking-[-0.02em] text-ink">
-            Have something <em className="text-accent">worth</em> building?
-          </h2>
+          <h2 className="text-4xl font-bold tracking-[-0.035em] text-ink sm:text-[2.75rem]">Contact</h2>
+          <p className="pretty mt-5 max-w-2xl text-lg text-muted sm:text-xl">
+            Always happy to talk about AI products, platform engineering, or something worth building.
+          </p>
         </FadeIn>
 
-        <FadeIn delay={0.15} className="mt-12 flex flex-col gap-6 border-y border-rule-strong py-8 sm:flex-row sm:items-center sm:justify-between">
+        <FadeIn delay={0.1} className="mt-10 flex items-center gap-3">
           <a
             href={`mailto:${contactInfo.email}`}
-            className="ink-link w-fit font-serif text-3xl text-ink sm:text-5xl"
+            className="rule-link font-mono text-lg text-ink decoration-ink-soft hover:decoration-accent sm:text-2xl"
           >
             {contactInfo.email}
           </a>
           <button
             onClick={copy}
-            className="flex h-10 w-fit items-center gap-2 rounded-full border border-rule-strong px-4 font-mono text-[11px] uppercase tracking-[0.12em] text-ink-soft transition-colors hover:border-ink hover:text-ink"
+            aria-label={copied ? "Email copied" : "Copy email address"}
+            className="flex h-8 w-8 items-center justify-center rounded-md text-muted transition-colors hover:bg-rule hover:text-ink"
           >
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.span
-                key={copied ? "done" : "copy"}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                transition={{ duration: 0.15 }}
-              >
-                {copied ? "Copied ✓" : "Copy address"}
-              </motion.span>
-            </AnimatePresence>
+            {copied ? <Check aria-hidden className="h-4 w-4 text-accent" /> : <Copy aria-hidden className="h-4 w-4" />}
           </button>
+          <span role="status" className="sr-only">
+            {copied ? "Copied" : ""}
+          </span>
         </FadeIn>
 
-        <div className="mt-16 grid grid-cols-2 gap-x-6 gap-y-10 font-mono text-[11px] sm:grid-cols-4">
-          <div>
-            <p className="uppercase tracking-[0.14em] text-faint">Elsewhere</p>
-            <ul className="mt-3 space-y-1.5 text-ink-soft">
-              {socialLinks.map((l) => (
-                <li key={l.label}>
-                  <a href={l.href} target="_blank" rel="noreferrer" className="ink-link">
-                    {l.label} ↗
-                  </a>
-                </li>
-              ))}
-              <li>
-                <a href={`tel:${contactInfo.phone.replace(/[^+\d]/g, "")}`} className="ink-link">
-                  {contactInfo.phone}
+        <FadeIn delay={0.15} className="mt-14">
+          <p className="font-mono text-[11px] tracking-[0.2em] text-muted uppercase">Explore more</p>
+          <ul className="mt-4 flex flex-wrap gap-x-8 gap-y-3 text-[17px]">
+            {socialLinks.map((l) => (
+              <li key={l.label}>
+                <a href={l.href} target="_blank" rel="noreferrer" className="rule-link text-ink-soft hover:text-ink">
+                  {l.label}
                 </a>
               </li>
-            </ul>
-          </div>
-          <div>
-            <p className="uppercase tracking-[0.14em] text-faint">Local time</p>
-            <p className="tabular mt-3 text-ink-soft">
-              {time || "--:--"} {profile.timezoneLabel}
-            </p>
-            <p className="mt-1.5 text-muted">{profile.base}</p>
-          </div>
-          <div className="col-span-2">
-            <p className="uppercase tracking-[0.14em] text-faint">Colophon</p>
-            <p className="pretty mt-3 max-w-sm leading-relaxed text-muted">
-              Set in Instrument Serif, Geist and Geist Mono. Built with Next.js and Framer Motion, printed on Vercel.
-              Press <kbd className="text-ink-soft">⌘K</kbd> anywhere to navigate.
-            </p>
-          </div>
-        </div>
+            ))}
+            <li>
+              <Link href="/blog" className="rule-link text-ink-soft hover:text-ink">
+                Field notes
+              </Link>
+            </li>
+            <li>
+              <a href={`tel:${contactInfo.phone.replace(/[^+\d]/g, "")}`} className="rule-link text-ink-soft hover:text-ink">
+                {contactInfo.phone}
+              </a>
+            </li>
+          </ul>
+        </FadeIn>
 
-        <div className="mt-20 flex items-end justify-between gap-6 border-t border-rule pt-6">
+        <div className="mt-20 flex flex-wrap items-center justify-between gap-4 border-t border-rule pt-6">
           <p className="font-mono text-[11px] text-faint">
-            © {new Date().getFullYear()} {profile.name}
+            © {new Date().getFullYear()} {profile.name} · {profile.timezoneLabel}{" "}
+            <span className="tabular">{time || "--:-- --"}</span> · Press ⌘K to navigate
           </p>
-          <a href="#top" className="ink-link font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">
-            Back to top ↑
+          <a
+            href="#top"
+            className="inline-flex h-9 items-center gap-2 rounded-lg border border-rule-strong px-3.5 font-mono text-[12px] text-ink-soft transition-colors hover:border-faint hover:text-ink"
+          >
+            Back to top
+            <ArrowUp aria-hidden className="h-3.5 w-3.5" />
           </a>
         </div>
       </div>

@@ -1,141 +1,127 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import Image from "next/image";
 import { motion } from "framer-motion";
-import { profile, sections, stats } from "@/lib/data";
+import { profile } from "@/lib/data";
+import { useClock } from "@/lib/hooks";
+import { cn } from "@/lib/utils";
+
+const GREETINGS = ["Hello", "નમસ્તે", "Hola", "नमस्ते", "Bonjour", "こんにちは", "Ciao"];
 
 const ease = [0.16, 1, 0.3, 1] as const;
-
 const rise = (delay: number) => ({
-  initial: { opacity: 0, y: 16 },
+  initial: { opacity: 0, y: 14 },
   animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.9, delay, ease },
+  transition: { duration: 0.8, delay, ease },
 });
 
-export default function Hero() {
-  const year = new Date().getFullYear();
+/** Types a greeting, holds it, erases it, and moves on to the next language. */
+function Greeting() {
+  const [word, setWord] = useState(0);
+  const [length, setLength] = useState(GREETINGS[0].length);
+  const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const full = [...GREETINGS[word]];
+    let delay = deleting ? 45 : 110;
+    if (!deleting && length === full.length) delay = 1800;
+    if (deleting && length === 0) delay = 250;
+
+    const id = window.setTimeout(() => {
+      if (!deleting && length === full.length) setDeleting(true);
+      else if (deleting && length === 0) {
+        setDeleting(false);
+        setWord((w) => (w + 1) % GREETINGS.length);
+      } else setLength((l) => l + (deleting ? -1 : 1));
+    }, delay);
+    return () => window.clearTimeout(id);
+  }, [word, length, deleting]);
 
   return (
-    <section id="top" className="mx-auto max-w-[1200px] px-5 pt-28 pb-20 sm:px-8 sm:pt-36 sm:pb-28">
-      {/* Masthead rule */}
-      <motion.div
-        {...rise(0)}
-        className="flex items-center justify-between border-y border-rule-strong py-2 font-mono text-[10px] uppercase tracking-[0.16em] text-muted sm:text-[11px]"
-      >
-        <span>Portfolio · Edition {year}</span>
-        <span className="hidden sm:inline">Software · Systems · Interfaces</span>
-        <span className="flex items-center gap-2">
-          <span className="relative flex h-1.5 w-1.5">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-60" />
-            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-accent" />
-          </span>
-          Now at {profile.now.company}
-        </span>
-      </motion.div>
+    <p className="flex h-10 items-center text-[1.75rem] font-light tracking-[-0.02em] text-ink-soft sm:text-3xl">
+      <span lang={word === 0 ? "en" : undefined}>{[...GREETINGS[word]].slice(0, length).join("")}</span>
+      <span aria-hidden className="caret ml-0.5 inline-block h-[0.95em] w-[2px] translate-y-px bg-accent" />
+    </p>
+  );
+}
 
-      <div className="relative">
-        <h1 className="mt-10 font-serif text-[clamp(4.5rem,20vw,11.5rem)] leading-[0.86] tracking-[-0.025em] text-ink sm:mt-14">
-          <span className="block overflow-hidden pb-[0.06em]">
-            <motion.span
-              className="block"
-              initial={{ y: "105%" }}
-              animate={{ y: 0 }}
-              transition={{ duration: 1.1, delay: 0.1, ease }}
-            >
-              Divyam
-            </motion.span>
-          </span>
-          <span className="block overflow-hidden pb-[0.08em]">
-            <motion.span
-              className="block italic sm:pl-[1.1em]"
-              initial={{ y: "105%" }}
-              animate={{ y: 0 }}
-              transition={{ duration: 1.1, delay: 0.2, ease }}
-            >
-              Mistry<span className="text-accent not-italic">.</span>
-            </motion.span>
-          </span>
-        </h1>
+function Wordmark({ name }: { name: string }) {
+  // Typographic stand-ins for each logo, so the row reads like the reference's logo strip.
+  const styles: Record<string, string> = {
+    Strique: "text-xl font-bold tracking-[-0.04em]",
+    "Resilient Tech": "text-lg font-semibold tracking-[-0.03em]",
+    ERPNext: "font-mono text-base font-medium tracking-tight",
+    Simulas: "text-xs font-semibold uppercase tracking-[0.42em]",
+    Nearlikes: "text-lg font-extrabold italic tracking-[-0.03em]",
+  };
+  return (
+    <span
+      className={cn(
+        "whitespace-nowrap text-faint transition-colors duration-300 hover:text-ink-soft",
+        styles[name] ?? "text-lg font-semibold",
+      )}
+    >
+      {name}
+    </span>
+  );
+}
 
-        <motion.aside
-          {...rise(0.9)}
-          className="absolute right-0 bottom-6 hidden max-w-[17rem] border-l border-rule-strong pl-5 lg:block"
-        >
-          <p className="font-mono text-[11px] text-muted">
-            <span className="text-accent">n.</span> software engineer
-          </p>
-          <p className="pretty mt-2 font-serif text-xl leading-snug text-ink-soft italic">
-            Builds backends that stay up and interfaces that feel quick. Based in {profile.base}.
-          </p>
-        </motion.aside>
-      </div>
+export default function Hero() {
+  const time = useClock(profile.timezone);
 
-      <div className="mt-14 grid grid-cols-12 gap-x-6 gap-y-14 sm:mt-20">
-        <motion.p
-          {...rise(0.45)}
-          className="pretty col-span-12 font-serif text-[1.75rem] leading-[1.2] text-ink-soft sm:text-[2.1rem] lg:col-span-7"
-        >
-          {profile.role} at {profile.now.company}, building{" "}
-          <span className="relative inline-block text-ink">
-            the quiet machinery
-            <motion.svg
-              aria-hidden
-              viewBox="0 0 300 12"
-              preserveAspectRatio="none"
-              className="absolute -bottom-1 left-0 h-[0.35em] w-full text-accent"
-            >
-              <motion.path
-                d="M2 8 C 60 2, 120 11, 180 6 S 270 3, 298 7"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                initial={{ pathLength: 0 }}
-                animate={{ pathLength: 1 }}
-                transition={{ duration: 1.2, delay: 1.1, ease: "easeInOut" }}
-              />
-            </motion.svg>
-          </span>{" "}
-          behind an agentic AI marketing platform — streaming chat, AI-generated reports, billing and product-feed
-          pipelines — and the interfaces that sit on top of them.
-        </motion.p>
+  return (
+    <section id="top" className="mx-auto max-w-[1000px] px-5 pt-36 pb-20 sm:px-8 sm:pt-44 sm:pb-24">
+      <div className="grid items-center gap-12 md:grid-cols-[1fr_auto] md:gap-16">
+        <div className="order-2 md:order-1">
+          <motion.div {...rise(0)}>
+            <Greeting />
+          </motion.div>
 
-        <motion.nav {...rise(0.6)} aria-label="Contents" className="col-span-12 lg:col-span-4 lg:col-start-9">
-          <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.14em] text-muted">Contents</p>
-          <ol className="border-t border-rule">
-            {sections.map((s) => (
-              <li key={s.id}>
-                <a
-                  href={`#${s.id}`}
-                  className="group flex items-baseline border-b border-rule py-2.5 text-[15px] text-ink-soft transition-colors hover:text-ink"
-                >
-                  <span className="transition-transform duration-300 group-hover:translate-x-1">{s.label}</span>
-                  <span className="leader" />
-                  <span className="tabular font-mono text-[11px] text-faint transition-colors group-hover:text-accent">
-                    {s.index}
-                  </span>
-                </a>
-              </li>
-            ))}
-          </ol>
-        </motion.nav>
-      </div>
-
-      <motion.dl {...rise(0.75)} className="mt-16 grid grid-cols-2 border-t border-rule-strong sm:mt-24 sm:grid-cols-4">
-        {stats.map((stat, i) => (
-          <div
-            key={stat.label}
-            className={`flex flex-col-reverse border-rule pt-5 pb-5 ${i % 2 === 1 ? "border-l pl-5" : ""} ${
-              i < 2 ? "border-b sm:border-b-0" : ""
-            } ${i > 0 ? "sm:border-l sm:pl-5" : ""}`}
+          <motion.h1
+            {...rise(0.12)}
+            className="balance mt-6 text-[2rem] leading-[1.18] font-medium tracking-[-0.04em] text-ink sm:mt-8 sm:text-[2.6rem] lg:text-[2.8rem]"
           >
-            <dt className="mt-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted sm:text-[11px]">
-              <sup className="mr-1 text-accent">{i + 1}</sup>
-              {stat.label}
-            </dt>
-            <dd className="tabular font-serif text-5xl leading-none text-ink sm:text-6xl">{stat.value}</dd>
+            I&apos;m a software engineer building{" "}
+            <a href="#work" className="rule-link">
+              agentic AI products
+            </a>{" "}
+            and{" "}
+            <a href="#shiplog" className="rule-link">
+              the systems behind them
+            </a>{" "}
+            that hold up in production.
+          </motion.h1>
+        </div>
+
+        <motion.figure {...rise(0.25)} className="order-1 flex flex-col items-start gap-4 md:order-2 md:items-center">
+          <div className="group relative h-36 w-36 overflow-hidden rounded-[2rem] border border-rule-strong sm:h-52 sm:w-52">
+            <Image
+              src="/avatar.jpg"
+              alt={profile.name}
+              fill
+              priority
+              sizes="(min-width: 640px) 208px, 144px"
+              className="object-cover grayscale contrast-[1.05] transition-[filter,transform] duration-700 group-hover:scale-[1.03] group-hover:grayscale-0"
+            />
           </div>
-        ))}
-      </motion.dl>
+          <figcaption className="font-mono text-[11px] tracking-[0.12em] text-muted uppercase">
+            {profile.baseShort} · {profile.timezoneLabel} <span className="tabular">{time || "--:-- --"}</span>
+          </figcaption>
+        </motion.figure>
+      </div>
+
+      <motion.div {...rise(0.4)} className="mt-20 sm:mt-24">
+        <p className="font-mono text-[11px] tracking-[0.2em] text-muted uppercase">Shipped at</p>
+        <div className="mt-6 grid grid-cols-2 items-center gap-x-6 gap-y-6 sm:grid-cols-5">
+          {profile.shippedAt.map((name) => (
+            <div key={name} className="flex sm:justify-center">
+              <Wordmark name={name} />
+            </div>
+          ))}
+        </div>
+      </motion.div>
     </section>
   );
 }

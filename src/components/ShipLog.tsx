@@ -51,9 +51,8 @@ export default function ShipLog() {
   return (
     <Section
       id="shiplog"
-      index="02"
       title="Ship log"
-      note="A running changelog of what made it to production — read it like a commit graph."
+      subtitle="Everything that made it to production, laid out like a commit graph."
     >
       <div className="flex flex-col gap-4 border-b border-rule-strong pb-5">
         <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">
@@ -79,7 +78,7 @@ export default function ShipLog() {
                 }}
                 disabled={kind !== "all" && !counts[kind]}
                 className={cn(
-                  "flex items-center gap-2 rounded-full border px-3 py-1.5 font-mono text-[11px] transition-colors disabled:opacity-40",
+                  "flex h-8 items-center gap-2 rounded-full border px-3.5 text-[13px] transition-colors disabled:opacity-40",
                   active ? "border-ink bg-ink text-paper" : "border-rule text-ink-soft hover:border-rule-strong",
                 )}
               >
@@ -106,7 +105,7 @@ export default function ShipLog() {
                 <span className="relative z-10 flex h-[15px] w-[15px] items-center justify-center rounded-sm border border-ink bg-paper">
                   <span className="h-[5px] w-[5px] rounded-[1px] bg-ink" />
                 </span>
-                <span className="tabular font-serif text-3xl leading-none text-ink">{group.year}</span>
+                <span className="tabular text-2xl leading-none font-semibold tracking-[-0.03em] text-ink">{group.year}</span>
                 <span className="h-px flex-1 bg-rule" />
               </div>
 
@@ -137,8 +136,15 @@ export default function ShipLog() {
                           {entry.role === "contributed" && <span className="text-faint">contributed</span>}
                           <span className="text-faint sm:hidden">{entry.when}</span>
                         </div>
-                        <h3 className="mt-2 font-serif text-2xl leading-tight text-ink sm:text-[1.7rem]">
-                          {entry.title}
+                        <h3 className="mt-2 text-lg leading-snug font-semibold tracking-[-0.025em] text-ink sm:text-xl">
+                          {entry.href ? (
+                            <a href={entry.href} target="_blank" rel="noreferrer" className="ink-link">
+                              {entry.title}
+                              <span className="ml-1.5 align-top font-mono text-xs text-accent">↗</span>
+                            </a>
+                          ) : (
+                            entry.title
+                          )}
                         </h3>
                         <p className="pretty mt-1.5 max-w-2xl leading-relaxed text-muted">{entry.summary}</p>
                         {(entry.impact || entry.tags?.length) && (
@@ -173,7 +179,7 @@ export default function ShipLog() {
             </span>
             <button
               onClick={() => setExpanded((e) => !e)}
-              className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent"
+              className="inline-flex h-8 items-center rounded-full border border-rule-strong px-3.5 text-[13px] text-ink-soft transition-colors hover:border-faint hover:text-ink"
             >
               {expanded ? "Collapse log" : `Show full log · ${total - PAGE} more`}
             </button>

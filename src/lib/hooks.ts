@@ -13,8 +13,8 @@ function subscribeTheme(callback: () => void) {
 export function useTheme() {
   const theme = useSyncExternalStore<Theme>(
     subscribeTheme,
-    () => (document.documentElement.dataset.theme === "dark" ? "dark" : "light"),
-    () => "light"
+    () => (document.documentElement.dataset.theme === "light" ? "light" : "dark"),
+    () => "dark"
   );
 
   const toggle = useCallback(() => {
@@ -33,12 +33,14 @@ function subscribeClock(callback: () => void) {
   return () => window.clearInterval(id);
 }
 
-/** Wall-clock time (HH:MM) in the given time zone; empty during SSR. */
+/** Wall-clock time ("06:56 PM") in the given time zone; empty during SSR. */
 export function useClock(timeZone: string) {
   return useSyncExternalStore(
     subscribeClock,
     () =>
-      new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", timeZone }).format(new Date()),
+      new Intl.DateTimeFormat("en-US", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone }).format(
+        new Date(),
+      ),
     () => ""
   );
 }

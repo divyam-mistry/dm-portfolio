@@ -1,26 +1,33 @@
 "use client";
 
+import { Moon, Sun } from "lucide-react";
 import { useTheme } from "@/lib/hooks";
+import { cn } from "@/lib/utils";
 
-/** The half-filled edition disc from the running header, as a standalone island. */
-export default function ThemeToggle() {
+/** Sliding day/night switch. The knob carries the icon of the current edition. */
+export default function ThemeToggle({ className }: { className?: string }) {
   const { theme, toggle } = useTheme();
+  const dark = theme === "dark";
 
   return (
     <button
+      role="switch"
+      aria-checked={dark}
+      aria-label="Dark theme"
       onClick={toggle}
-      className="group flex h-8 w-8 items-center justify-center rounded-full border border-rule transition-colors hover:border-rule-strong"
-      aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
-      title={theme === "dark" ? "Paper edition" : "Ink edition"}
+      className={cn(
+        "relative flex h-7 w-12 shrink-0 items-center rounded-full border border-rule-strong bg-paper-sunken p-0.5 transition-colors hover:border-faint",
+        className,
+      )}
     >
-      <svg
-        viewBox="0 0 16 16"
-        className="h-3.5 w-3.5 transition-transform duration-500 group-hover:rotate-180"
-        aria-hidden
+      <span
+        className={cn(
+          "flex h-[22px] w-[22px] items-center justify-center rounded-full bg-ink text-paper shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+          dark ? "translate-x-0" : "translate-x-5",
+        )}
       >
-        <circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.2" />
-        <path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor" />
-      </svg>
+        {dark ? <Moon aria-hidden className="h-3 w-3" /> : <Sun aria-hidden className="h-3 w-3" />}
+      </span>
     </button>
   );
 }

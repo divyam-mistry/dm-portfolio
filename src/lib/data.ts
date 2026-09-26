@@ -11,8 +11,12 @@ export interface ProjectLink {
   href: string;
 }
 
+export type ProjectCover = "canvas" | "billing" | "stream" | "merchant" | "compliance" | "dashboards";
+
 export interface Project {
   name: string;
+  /** Which illustrated cover the Work card draws */
+  cover: ProjectCover;
   summary: string;
   org?: string;
   techStack: string[];
@@ -37,6 +41,8 @@ export interface ShipLogEntry {
   impact?: string;
   role?: "led" | "built" | "contributed";
   tags?: string[];
+  /** Public link (e.g. a merged PR) when the work is open source */
+  href?: string;
 }
 
 export interface SkillCategory {
@@ -75,7 +81,11 @@ export const profile = {
   role: "Software Engineer",
   timezone: "Asia/Kolkata",
   timezoneLabel: "IST",
-  base: "India",
+  base: "Mumbai, India",
+  baseShort: "MUM, IND",
+  about:
+    "I'm a full-stack engineer at Strique, where I've spent two and a half years on an agentic AI marketing platform: streaming chat, AI-generated reports, credit billing and product-feed pipelines. Before that I shipped GST compliance features to India Compliance, an open-source app for ERPNext, and built payment integrations and booking webhooks at Simulas. I care about systems that hold up under real load, and interfaces that make them feel effortless.",
+  shippedAt: ["Strique", "Resilient Tech", "ERPNext", "Simulas", "Nearlikes"],
   now: {
     company: "Strique",
     role: "Software Engineer",
@@ -87,7 +97,7 @@ export const experiences: Experience[] = [
     company: "Strique",
     role: "Software Engineer",
     period: "Apr 2024 – Present",
-    location: "Agentic AI marketing platform",
+    location: "Mumbai · Agentic AI marketing platform",
     description: [
       "Co-built the streaming chat backend for an agentic AI marketing assistant, then added live multi-step plan tracking, slash commands and custom team commands.",
       "Designed and shipped an AI report canvas that renders answers as versioned, editable documents, exportable to PDF and DOCX and openable in Google Docs, Sheets, Word or Excel.",
@@ -95,6 +105,21 @@ export const experiences: Experience[] = [
       "Cut chat history reload payloads by 93.5% on average in testing, and fixed an out-of-memory crash on large uploads by bounding file extraction and chunking cached reads.",
       "Built a Go and Temporal pipeline that publishes product catalogues to Google Merchant Center and turns Google's listing issues into one-click fixes.",
       "Earlier, built the analytics app's component library, dashboards and reporting widgets, plus the Java services that compute cross-platform marketing metrics.",
+    ],
+  },
+  {
+    company: "Resilient Tech",
+    role: "Software Engineer",
+    period: "Jul 2023 – Apr 2024",
+    location: "Vadodara · Intern → full-time",
+    description: [
+      "Shipped 11 merged pull requests to India Compliance, the open-source GST compliance app for ERPNext, across GSTR-1 reporting, e-Waybill and purchase reconciliation.",
+      "Added one-click GSTR-1 Excel export with the HSN summary built into the report, and aligned the export's headers and precision with the government filing format.",
+      "Let users schedule e-Waybill validity extensions from the Extend Validity dialog, with each scheduled extension recorded in the e-Waybill log.",
+      "Surfaced reconciliation gaps where accountants work: alerts for missing GSTR-2B downloads, and warnings on payment entries that reference unreconciled purchase invoices.",
+      "Upstreamed a fix to ERPNext so item tax templates are chosen on the base-currency net rate, which stops foreign-currency invoices from getting the wrong GST slab.",
+      "Reworked the theme of the documentation site and added a Steps component for walkthroughs.",
+      "Started as an intern: learned the Frappe framework and built the frontend of Janseva Labs, a client project, with Next.js and Tailwind CSS.",
     ],
   },
   {
@@ -122,6 +147,7 @@ export const experiences: Experience[] = [
 export const projects: Project[] = [
   {
     name: "AI Report Canvas",
+    cover: "canvas",
     summary: "Editable, exportable documents from AI answers",
     org: "Strique",
     techStack: ["TypeScript", "React", "Next.js", "Python", "FastAPI", "PostgreSQL", "Tiptap", "Playwright", "LiteLLM"],
@@ -136,6 +162,7 @@ export const projects: Project[] = [
   },
   {
     name: "Credit Billing",
+    cover: "billing",
     summary: "Usage-metered plans, credits and payments",
     org: "Strique",
     techStack: ["Python", "FastAPI", "PostgreSQL", "Stripe", "Next.js", "TypeScript", "PostHog", "Casbin"],
@@ -150,6 +177,7 @@ export const projects: Project[] = [
   },
   {
     name: "Chat Reliability",
+    cover: "stream",
     summary: "Leaner, steadier AI chat streaming",
     org: "Strique",
     techStack: ["Python", "FastAPI", "Server-Sent Events", "Redis", "PostgreSQL", "Kubernetes", "Next.js"],
@@ -164,6 +192,7 @@ export const projects: Project[] = [
   },
   {
     name: "Merchant Center Sync",
+    cover: "merchant",
     summary: "Scheduled product-feed publishing to Google",
     org: "Strique",
     techStack: ["Go", "Temporal", "PostgreSQL", "GORM", "Google Merchant API", "Kubernetes CronJobs"],
@@ -177,7 +206,31 @@ export const projects: Project[] = [
     ],
   },
   {
+    name: "India Compliance",
+    cover: "compliance",
+    summary: "Open-source GST compliance for ERPNext",
+    org: "Resilient Tech",
+    techStack: ["Python", "JavaScript", "Frappe", "ERPNext", "MariaDB"],
+    year: "2024",
+    period: "Nov 2023 – Apr 2024",
+    status: "Merged upstream",
+    description: [
+      "India Compliance is Resilient Tech's open-source app that brings Indian GST filing, e-Invoicing and e-Waybill to ERPNext. I shipped 11 merged pull requests to it across reporting, logistics and reconciliation.",
+      "GSTR-1 reporting: one-click Excel export with the HSN summary built in, headers and precision matched to the government format, and the first cut of the GSTR-1 filing UI, which the team then took to release.",
+      "e-Waybill scheduled validity extensions, reconciliation alerts for missing GSTR-2B data, TCS GSTIN validation, plus an upstream ERPNext fix for tax templates on multi-currency invoices.",
+    ],
+    links: [
+      {
+        label: "My merged PRs",
+        href: "https://github.com/resilient-tech/india-compliance/pulls?q=is%3Apr+author%3Adivyam-mistry+is%3Amerged",
+      },
+      { label: "Repository", href: "https://github.com/resilient-tech/india-compliance" },
+      { label: "ERPNext fix", href: "https://github.com/frappe/erpnext/pull/39448" },
+    ],
+  },
+  {
     name: "Reporting Dashboards",
+    cover: "dashboards",
     summary: "Cross-platform marketing dashboards and reports",
     org: "Strique",
     techStack: [
@@ -459,6 +512,105 @@ export const shipLog: ShipLogEntry[] = [
     tags: ["React", "TypeScript", "Storybook"],
   },
   {
+    date: "2024-04",
+    when: "Mar – Apr 2024",
+    kind: "feat",
+    title: "First cut of the GSTR-1 filing UI",
+    org: "Resilient · India Compliance",
+    summary:
+      "Opened the GSTR-1 filing interface, a dedicated view for preparing returns, which the team then carried through to release.",
+    role: "contributed",
+    tags: ["Frappe", "JavaScript", "Python"],
+    href: "https://github.com/resilient-tech/india-compliance/pull/1910",
+  },
+  {
+    date: "2024-03",
+    when: "Feb – Mar 2024",
+    kind: "fix",
+    title: "GSTR-1 Excel matched to the government format",
+    org: "Resilient · India Compliance",
+    summary:
+      "Re-ordered, added and renamed export headers to the official GSTR-1 layout, and set precision on the fields that feed the return.",
+    tags: ["Python", "Excel"],
+    href: "https://github.com/resilient-tech/india-compliance/pull/1684",
+  },
+  {
+    date: "2024-02",
+    when: "Feb 2024",
+    kind: "fix",
+    title: "Multi-currency tax templates, fixed upstream",
+    org: "Frappe · ERPNext",
+    summary:
+      "Made ERPNext pick item tax templates on the base-currency net rate, so switching an invoice to USD no longer applied the wrong GST slab.",
+    tags: ["Python", "ERPNext"],
+    href: "https://github.com/frappe/erpnext/pull/39448",
+  },
+  {
+    date: "2024-02",
+    when: "Jan – Feb 2024",
+    kind: "fix",
+    title: "GST breakup decoupled from ERPNext's tax table",
+    org: "Resilient · India Compliance",
+    summary:
+      "Rebuilt the GST breakup table so it no longer depends on ERPNext's generic tax breakup, and limited GSTIN fields in setup to Indian companies.",
+    tags: ["Frappe", "JavaScript"],
+    href: "https://github.com/resilient-tech/india-compliance/pull/1644",
+  },
+  {
+    date: "2024-01",
+    when: "Jan 2024",
+    kind: "feat",
+    title: "Scheduled e-Waybill validity extensions",
+    org: "Resilient · India Compliance",
+    summary:
+      "A schedule option in the Extend Validity dialog, an already-scheduled state, and a log comment for every scheduled extension.",
+    tags: ["Python", "Frappe", "e-Waybill"],
+    href: "https://github.com/resilient-tech/india-compliance/pull/1508",
+  },
+  {
+    date: "2024-01",
+    when: "Jan – Mar 2024",
+    kind: "infra",
+    title: "Docs site theme and Steps component",
+    org: "Resilient · Docs",
+    summary:
+      "Brought the documentation site's theme in line with the company site and added a Steps component for step-by-step setup guides.",
+    tags: ["MDX", "CSS"],
+    href: "https://github.com/resilient-tech/india-compliance-docs/pull/29",
+  },
+  {
+    date: "2023-12",
+    when: "Dec 2023",
+    kind: "feat",
+    title: "One-click GSTR-1 Excel export with HSN",
+    org: "Resilient · India Compliance",
+    summary: "Exported the whole GSTR-1 report to Excel in one click, with the HSN summary report built in.",
+    tags: ["Python", "Excel"],
+    href: "https://github.com/resilient-tech/india-compliance/pull/1448",
+  },
+  {
+    date: "2023-12",
+    when: "Nov – Dec 2023",
+    kind: "feat",
+    title: "Reconciliation nudges for purchase invoices",
+    org: "Resilient · India Compliance",
+    summary:
+      "Warned on payment entries that reference unreconciled purchase invoices, and alerted users to missing GSTR-2B downloads in the reconciliation tool.",
+    tags: ["JavaScript", "Frappe"],
+    href: "https://github.com/resilient-tech/india-compliance/pull/1378",
+  },
+  {
+    date: "2023-11",
+    when: "Nov 2023",
+    kind: "fix",
+    title: "TCS GSTIN validation across documents",
+    org: "Resilient · India Compliance",
+    summary:
+      "Validated tax-collector GSTINs on parties, addresses and transactions, and fixed e-Waybill barcode defaults.",
+    tags: ["Python", "Frappe"],
+    href: "https://github.com/resilient-tech/india-compliance/pull/1306",
+  },
+  {
     date: "2023-06",
     when: "Jun 2023",
     kind: "infra",
@@ -530,6 +682,7 @@ export const skills: SkillCategory[] = [
       "React",
       "FastAPI",
       "Spring Boot",
+      "Frappe",
       "Temporal",
       "OpenAI Agents SDK",
       "LiteLLM",
@@ -587,10 +740,10 @@ export const education: Education = {
 };
 
 export const stats: Stat[] = [
+  { value: "3+ Yrs", label: "Shipping to production" },
   { value: "462", label: "PRs merged at Strique" },
-  { value: "521", label: "Reviews given" },
-  { value: "25", label: "Initiatives shipped" },
-  { value: "600+", label: "Problems solved" },
+  { value: "521", label: "Code reviews given" },
+  { value: "600+", label: "DSA problems solved" },
 ];
 
 export const contactInfo = {
@@ -609,11 +762,12 @@ export const socialLinks = [
 ].filter((l) => l.href && l.href !== "#");
 
 export const sections = [
-  { id: "work", index: "01", label: "Selected work" },
-  { id: "shiplog", index: "02", label: "Ship log" },
-  { id: "writing", index: "03", label: "Field notes" },
-  { id: "experience", index: "04", label: "Experience" },
-  { id: "toolkit", index: "05", label: "Toolkit" },
-  { id: "record", index: "06", label: "Record" },
-  { id: "contact", index: "07", label: "Contact" },
+  { id: "about", index: "01", label: "About", nav: "About" },
+  { id: "work", index: "02", label: "Selected work", nav: "Work" },
+  { id: "shiplog", index: "03", label: "Ship log", nav: "Ship log" },
+  { id: "writing", index: "04", label: "Field notes", nav: "Writing" },
+  { id: "experience", index: "05", label: "Experience", nav: "Experience" },
+  { id: "toolkit", index: "06", label: "Toolkit", nav: null },
+  { id: "record", index: "07", label: "Record", nav: null },
+  { id: "contact", index: "08", label: "Contact", nav: "Contact" },
 ] as const;

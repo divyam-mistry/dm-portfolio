@@ -52,7 +52,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
             <span className="text-faint">·</span>
             <span className="text-faint">{readingTime(post)} min read</span>
           </div>
-          <h1 className="balance mt-4 font-serif text-4xl leading-[1.05] text-ink sm:text-5xl">{post.title}</h1>
+          <h1 className="balance mt-4 font-semibold tracking-[-0.03em] text-4xl leading-[1.05] text-ink sm:text-5xl">{post.title}</h1>
           <p className="pretty mt-5 text-lg leading-relaxed text-muted">{post.dek}</p>
         </header>
 
@@ -71,7 +71,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
             {next && (
               <Link href={`/blog/${next.slug}`} className="group rounded-lg border border-rule p-4 transition-colors hover:border-rule-strong">
                 <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint">Older</span>
-                <span className="mt-1 block font-serif text-lg leading-snug text-ink group-hover:text-accent">
+                <span className="mt-1 block font-semibold tracking-[-0.03em] text-lg leading-snug text-ink group-hover:text-accent">
                   {next.title}
                 </span>
               </Link>
@@ -82,7 +82,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
                 className="group rounded-lg border border-rule p-4 transition-colors hover:border-rule-strong sm:text-right"
               >
                 <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint">Newer</span>
-                <span className="mt-1 block font-serif text-lg leading-snug text-ink group-hover:text-accent">
+                <span className="mt-1 block font-semibold tracking-[-0.03em] text-lg leading-snug text-ink group-hover:text-accent">
                   {prev.title}
                 </span>
               </Link>

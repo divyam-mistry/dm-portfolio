@@ -27,13 +27,13 @@ export default function PostBody({ blocks }: { blocks: BlogBlock[] }) {
             );
           case "h2":
             return (
-              <h2 key={i} className="pt-6 font-serif text-[1.65rem] leading-tight text-ink">
+              <h2 key={i} className="pt-6 font-semibold tracking-[-0.03em] text-[1.65rem] leading-tight text-ink">
                 {block.text}
               </h2>
             );
           case "quote":
             return (
-              <blockquote key={i} className="border-l-2 border-accent pl-5 font-serif text-xl italic text-ink">
+              <blockquote key={i} className="border-l-2 border-accent pl-5 font-semibold tracking-[-0.03em] text-xl italic text-ink">
                 {block.text}
               </blockquote>
             );

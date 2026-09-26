@@ -278,40 +278,50 @@ export const blogPosts: BlogPost[] = [
     body: [
       {
         type: "p",
-        text: "Chat is a terrible medium for a fifty-row answer. Our assistant does marketing analytics, so the questions that matter come back as comparisons, trends and breakdowns — exactly the material that turns into porridge when it's streamed as prose with a few markdown tables. So we built a report canvas: a side panel that renders data-heavy answers as structured documents, with KPI cards, charts, tables, tabs and diagrams, generated entirely by the model and then owned by the user.",
+        text: "Chat is a terrible medium for a fifty-row answer. Our assistant does marketing analytics, so the questions that matter come back as comparisons, trends and breakdowns — exactly the material that turns into porridge when it streams as prose with a few markdown tables. So we built a report canvas: a side panel that renders data-heavy answers as structured documents — KPI cards, charts, tables, tabs, diagrams — generated entirely by the model and then owned by the user.",
       },
       {
         type: "p",
-        text: "The first version generated the document as part of the chat response itself. It demoed beautifully and creaked in production. When a generation failed midway, users got half a document welded to half an answer. There was no clean boundary for validating the output, no natural place to version it, and every formatting quirk of the model leaked straight onto the page.",
+        text: "For the first three months, generation lived inside the chat answer itself. The orchestrating agent wrote the whole document inline in its streamed reply, wrapped in a tag carrying a title and a format; when the stream ended, the server scanned the text for those tags and persisted what it found, deciding “new document or new version?” by matching titles.",
+      },
+      {
+        type: "p",
+        text: "It demoed beautifully and creaked in production, in ways worth listing because each one drove a design decision. A malformed or truncated document reached the browser mid-stream, with no place to catch it and retry. Every number had to survive the orchestrator's context window on its way into the document, and under length pressure the model would substitute placeholder prose for data or quietly drop a whole research section. And title matching created duplicate documents and false versions — ask for a revision, get a stranger.",
       },
       { type: "h2", text: "Make it a tool" },
       {
         type: "p",
-        text: "The rework moved generation into a dedicated tool call. The model decides a report is warranted and calls the tool with the document as structured content — a JSON spec of typed blocks, not markup. That one boundary bought three properties at once. Schema validation: a malformed document fails at generation time with a specific error, instead of rendering as something broken in front of the user. Versioned edits: the model modifies an explicit base version, so an edit is a new version rather than a mutation. And a hard time budget: a generation that cannot finish fails cleanly at the ceiling instead of hanging a conversation.",
+        text: "The rework moved generation into a dedicated tool. The orchestrator now passes only a small brief — a title, one of five formats, a one-sentence intent, optional section names, optionally the id of an existing document to edit, and a page cap only when the user actually stated one. Everything else the tool does for itself.",
       },
       {
         type: "code",
-        lang: "json",
-        code: `{
-  "blocks": [
-    { "type": "kpi_row",
-      "items": [{ "label": "Spend", "value": "…", "delta": "−12%" }] },
-    { "type": "chart", "id": "c1", "kind": "line", "series_ref": "s1" },
-    { "type": "table", "id": "t1", "columns": ["…"], "rows_ref": "r1" }
-  ]
-}`,
+        lang: "text",
+        code: `report_tool(title, format ∈ {rich, markdown, html, code, csv},
+            intent: one sentence, sections?, source_refs?,
+            document_id?,        # edits only
+            max_pages?)          # only if the user set one
+  → ok:     {status: "ok", id, title, format}
+  → failed: {status: "failed", error: timeout | generation | validation}`,
       },
       {
         type: "p",
-        text: "The spec is also a division of labour: the model owns content, the renderer owns presentation. The model never chooses fonts, spacing or layout — it says “this is a KPI row, this is a line chart over that series” and the canvas decides what that looks like. Which meant we could later add lazy-loaded report cards, a full-screen mode and new export targets without touching generation at all, and tune generation without breaking a single rendered document.",
+        text: "Crucially, the tool does not trust the orchestrator to relay the data. It reads the conversation record directly and classifies what it finds: the user's messages and the research memos from specialist sub-agents are protected findings; raw intermediate tool output is filler, truncated first when space runs out. Then one isolated, non-streaming, tool-less model call runs — the schema contract as its system prompt, the brief plus source as the user message — followed by validation, one retry with the exact validator error appended, and a tiered recovery path (drop the raw data, then split the findings into parts generated in parallel and merged deterministically), all under a single hard time ceiling.",
+      },
+      {
+        type: "p",
+        text: "The tool hands back only an id — the document body never rides the chat stream. The validated document is held in memory and written to the database only after the reply row commits, so a message can never reference a row that does not exist. And the server rewrites every document tag in the reply with the authoritative id, because we learned that a model asked to echo a 36-character id will occasionally add a letter: one extra character, one 404, one confused user staring at an empty panel. The rule that came out of it: never look anything up by an identifier the model typed.",
+      },
+      {
+        type: "p",
+        text: "Failure is part of the contract too. When the tool fails, the orchestrator answers inline with the full data, as if the tool did not exist, and never mentions the failure. No half-documents, no apology cards.",
       },
       {
         type: "ul",
         items: [
-          "A schema moves failure earlier, and earlier failure is cheaper: a validation error at generation time beats a broken page in front of a user.",
-          "Contracts beat conventions. The prompt can ask for well-formed documents; only the validator can insist.",
-          "Separate content from presentation even when one model produces both — it is the seam every future feature will need.",
-          "A hard time budget turns an unbounded worst case into a bounded, reportable one.",
+          "A schema moves failure earlier, and earlier failure is cheaper: a validation error inside a tool beats a broken page in front of a user.",
+          "The agent that talks to the user should not also typeset the data. Every number it relays by hand has to survive its context window; a tool can go back to the source.",
+          "Never trust a model-transcribed identifier. Rewrite it from the authoritative record, or fail closed.",
+          "Design the failure path first. “Answer inline as if the tool doesn't exist” meant reliability work could ship without ever stranding a user.",
         ],
       },
     ],
@@ -327,33 +337,45 @@ export const blogPosts: BlogPost[] = [
     body: [
       {
         type: "p",
-        text: "When we sat down to fix the report canvas's reliability, the first step was boring bookkeeping: we took the recent generation failures and grouped them by root cause instead of by symptom. Fourteen failures, and seven of them were the same bug wearing different clothes — a dangling reference. A chart pointing at a data series that was never emitted. A block referring to an id that had been renamed three hundred lines earlier, or dropped in an edit, or simply invented.",
+        text: "When we sat down to fix the report canvas's reliability, the first step was boring bookkeeping: we pulled the recent generation failures and grouped them by root cause instead of by symptom. Fourteen failures, and seven were the same bug in different clothes — a dangling reference.",
       },
       {
         type: "p",
-        text: "This is a very LLM-shaped failure. Models are excellent at local coherence — any given block looks right — and unreliable at referential integrity across a long structured document. By the time the model writes block forty of a spec, the id it made up in block three is a distant memory it may misremember with total confidence. Ask for prose and nobody notices. Ask for a machine-readable document where blocks reference each other, and every lapse becomes a render failure.",
-      },
-      { type: "h2", text: "Validate like a linker" },
-      {
-        type: "p",
-        text: "The fix was to treat the spec the way a linker treats object files: every symbol that is referenced must resolve, or the document does not ship. After schema validation, a pass walks every reference field in the document and checks it against the set of ids that actually exist. It is a cheap, total check — unlike “is this report good?”, “does `series_ref: s1` resolve?” has a definite answer — and it catches the whole class, not just the instances we had seen.",
+        text: "A structured report here is one JSON object: a flat map of elements, where each container lists its children by key. The failing documents had containers naming keys that did not exist. The model would plan a section — put its key in a parent's child list — and then never write the element. Or write it under a punctuation variant: `sales-section` in the plan, `sales_section` in the map.",
       },
       {
         type: "p",
-        text: "A resolvable failure also enables a sane recovery: a generation that fails the reference check can be repaired or retried with a specific complaint, rather than surfacing to the user as a broken page or a vague apology.",
+        text: "This is a very LLM-shaped failure. Models are excellent at local coherence — any given element looks right — and unreliable at referential integrity across a long structured document. By element forty, the key invented at element three is a distant memory the model misremembers with total confidence. Ask for prose and nobody notices. Ask for a machine-readable document whose parts reference each other, and every lapse is a render failure.",
       },
-      { type: "h2", text: "The rest of the failure budget" },
       {
         type: "p",
-        text: "The same reliability pass picked up the next causes on the list. Page limits that users set became enforced constraints instead of polite requests. And reporting date windows were made deterministic — a phrase like “last month” is resolved to concrete dates once, server-side, so the same question produces the same window every time instead of whatever the model felt that day.",
+        text: "It was also an expensive failure. The validator rejected the whole document at the first missing key, the automatic regeneration usually failed the same way, and the user — who had waited minutes for a long agent run — lost the entire artefact over a reference that carried no content at all.",
+      },
+      { type: "h2", text: "Repair like a linker, then validate" },
+      {
+        type: "p",
+        text: "So the fix was not better detection; it was repair. Before the strict checks run, a pass walks every child reference that fails to resolve. It normalises the key — lower-case, punctuation stripped — and looks for an existing element with the same normal form. If one exists, the reference is rewired to it; if nothing matches, the reference is pruned. Tabs and accordions pair labels to children by position, so pruning a child also drops its label — otherwise every later tab is mislabelled by one.",
+      },
+      {
+        type: "p",
+        text: "“Rewire if safe” is where it got interesting, because a careless repair can build a worse document than the one it fixes. Three vetoes: never rewire onto an element another container already mounts, which would trade a missing-reference failure for a duplicate-render one; never onto the element itself; and never onto an element that can already reach this one through the child graph — because that closes a cycle. That last veto exists because a reviewer proved the first version could rewire two near-miss keys into root → a → root, a shape the validator would pass and the renderer would recurse on forever. And if a repair would leave only empty layout containers reachable, the repair is discarded and the strict failure stands — a hollow skeleton is worse than a retry.",
+      },
+      {
+        type: "p",
+        text: "The strict checks still run on whatever survives repair: every reference resolves, every element is mounted exactly once, nothing is orphaned. And every repair logs a warning, so repairs are countable — a validator that silently fixes things is just a bug with better manners.",
+      },
+      { type: "h2", text: "Same bug, other costumes" },
+      {
+        type: "p",
+        text: "Once we saw the shape — a model-typed identifier used as a lookup key — it was everywhere. The mistyped 36-character document id, fixed by rewriting from the server's record. The placeholder id: a model passing the literal string “null” as a document id, stranding a document no database row would ever match and leaving the panel's loader spinning — fixed by normalising placeholders and demoting the edit to a new document. And retyped preview links: a link one character off a real one is well-formed and opens nothing, so a link now ships only if it appears verbatim in the source material the generator was given. Fail closed.",
       },
       {
         type: "ul",
         items: [
-          "Count failures by root cause, not by symptom. Ours looked like fourteen problems and were really about four — and half the pile was one bug.",
-          "Referential integrity is checkable even when quality isn't. Validate everything that has a definite answer; save human judgement for what doesn't.",
-          "Treat model output like untrusted input to a compiler: parse, validate, link — then render.",
-          "Every input the model doesn't control is one less way two runs can differ. Determinism is something you deliberately take away from the model.",
+          "Count failures by root cause, not by symptom. Ours looked like fourteen problems and half the pile was one bug.",
+          "Repair beats rejection when the repair is deterministic — but every rewire needs a proof it cannot create a worse document. Ours needed three vetoes and a skeleton guard.",
+          "Referential integrity is checkable even when quality isn't. Validate everything that has a definite answer; save judgement for what doesn't.",
+          "Any identifier a model types will eventually be mistyped. Correct it from the authoritative record, or drop it — never trust it.",
         ],
       },
     ],
@@ -373,29 +395,41 @@ export const blogPosts: BlogPost[] = [
       },
       {
         type: "p",
-        text: "The other escape hatch was worse: copy the content out into a real editor, at which point the structure — the charts, the KPI cards, the live tables — dies, and the canvas has demoted itself to a clipboard. If the document is the product, it has to be editable where it lives. So we made it one: in-panel rich-text editing, version history with restore, author attribution and a full-screen mode.",
+        text: "The other escape hatch was worse: copy the content out into a real editor, at which point the structure — the charts, the KPI cards, the live tables — dies, and the canvas has demoted itself to a clipboard. If the document is the product, it has to be editable where it lives.",
       },
-      { type: "h2", text: "Versions are what make editing safe" },
+      { type: "h2", text: "Versions are pointers, not copies" },
       {
         type: "p",
-        text: "The mechanism underneath is the same one that made generation reliable: versions. Every change — the model's or a person's — produces a new version against an explicit base, and any version can be restored. That single property removes the fear from both directions of editing. A person can rework a generated document knowing the original is one click away, and the model can be asked to revise again without silently trampling human work, because its edit is just another version in the chain, attributed to its author.",
+        text: "The machinery underneath is deliberately dull: an append-only list of full snapshots plus a “current version” pointer. Every change — the model's or a person's — appends a snapshot; readers see whatever the pointer names. Restore is a pointer move: nothing is copied, created or deleted. That choice came from arithmetic, not elegance — each document keeps at most fifty versions, and if restore duplicated the restored body as a new snapshot, anyone who restores often would burn the budget on copies of the same content. The first version and the current one are never pruned.",
       },
       {
         type: "p",
-        text: "Attribution sounds cosmetic and isn't. When a document has two kinds of author, “who wrote this?” is a trust question — a person deciding whether to forward a report wants to know which parts are machine-drafted and which parts a colleague already reviewed. Recording authorship per version made that answerable instead of vibes.",
+        text: "One numbering rule does quiet, load-bearing work: a new version is numbered from the highest number that exists, not from the pointer. Restore v2 of five versions and then save an edit, and you get v6 — history branches forward, and v3 through v5 remain exactly where they were, still restorable. Nothing you did before a restore can be destroyed by what you do after it.",
       },
-      { type: "h2", text: "Whose document is it?" },
       {
         type: "p",
-        text: "The deeper shift was in how we thought about ownership. Before editing, a report belonged to the model, and the user was its audience. The first time a person touches the document, ownership flips — it is theirs now, and the model is a collaborator who drafted it. Most product decisions fell out of taking that flip seriously: edits must never be lost to a regeneration, history must show hands as well as changes, and restoring the past must be as easy as making the future.",
+        text: "Versioning also fixed a small, maddening UI wrong: every chat card for a document used to open the latest body, so older versions were unreachable. But each generated version already records which assistant message produced it, and each card knows its own message — match the two, and every card opens the version it announced. No schema change, and it worked retroactively for every old conversation.",
+      },
+      { type: "h2", text: "Two kinds of author" },
+      {
+        type: "p",
+        text: "Attribution sounds cosmetic and isn't. Each version records whether a model or a person made it, and for people, who. The first cut accepted the editor's display name from the request body — until review pointed out that any authenticated caller could stamp a teammate's name onto an edit. The name is now resolved server-side from the session, and whatever the client sends is ignored. Attribution is a trust feature, which makes it a security surface.",
+      },
+      {
+        type: "p",
+        text: "The editing itself converts the model's component spec into a rich-text document: prose becomes ordinary editable text, while charts, KPI cards and tables ride along as atomic embedded blocks that re-render through the same components and stay editable in place. One guard worth stealing: a chart's data table is sometimes derived — long-tail series folded into an “Other” row — and those render read-only in edit mode, because writing an edit back by row index into folded data would silently hit the wrong source row.",
+      },
+      {
+        type: "p",
+        text: "And when the model edits after a human has edited, it loads whatever the pointer names — the human's content is the authoritative base, and the instruction is to change only what was asked. Both kinds of author write through the same version machinery, so nothing human-made can be silently trampled, and anything can be taken back.",
       },
       {
         type: "ul",
         items: [
           "Generated artefacts need a lifecycle, not just a render. If people will send it, sign it or defend it, they need to shape it first.",
-          "Version history is trust infrastructure: people edit fearlessly exactly when undo is guaranteed.",
-          "When two kinds of author share a document, record which hand wrote what — attribution is a feature, not metadata.",
-          "The regeneration lottery is not an editing story. “Ask again” discards everything the user already approved.",
+          "Restore as a pointer move makes undo free — and guaranteed undo is what makes people edit machine output fearlessly.",
+          "Number new versions past the highest that exists, and a restore can never destroy the future it rewound.",
+          "Attribution is a feature and an attack surface: resolve identity from the session, never from the payload.",
         ],
       },
     ],
@@ -411,29 +445,41 @@ export const blogPosts: BlogPost[] = [
     body: [
       {
         type: "p",
-        text: "A report that lives only inside a chat panel is half a product. Reports exist to leave — they get attached to emails, dropped into decks, filed with clients, edited by people who will never open our app. So the canvas had to meet documents where documents actually live, and that meant one source of truth wearing five different bodies: the interactive panel, PDF, DOCX, Google Docs and Sheets, and Word and Excel.",
+        text: "A report that lives only inside a chat panel is half a product. Reports exist to leave — they get attached to emails, dropped into decks, filed with clients, edited by people who will never open our app. So the canvas had to meet documents where documents live, and that meant one source of truth wearing five bodies: the interactive panel, PDF, DOCX, spreadsheets, and files in the reader's own Google Drive or OneDrive.",
       },
       {
         type: "p",
-        text: "The thing that made this tractable is that a canvas document is a JSON spec of typed blocks, not markup. Every export is a renderer over the same spec. The PDF path drives a headless browser with Playwright, reusing the same rendering that draws the panel, so what you print is what you saw. The DOCX path builds a native document with python-docx, block by block, because a Word file is not a web page and pretending otherwise produces documents that look pasted. The Google and Microsoft paths go over OAuth and create real files in the user's own account.",
+        text: "Our first PDF was honest about being version one: rasterise the rendered panel and slice the bitmap into A4-height strips. No selectable text, and tables guillotined mid-row wherever a page happened to end. Within a week it was replaced by the shipped design: a server-side HTML print template rendered by headless Chromium via Playwright, with charts pre-rendered to images — because a real print engine honours “don't split this element”, so tables and KPI cards survive page breaks intact.",
+      },
+      {
+        type: "p",
+        text: "The other surfaces got native treatment rather than conversions. DOCX is built element by element with python-docx, since a Word file is not a web page and pretending otherwise produces documents that look pasted. Spreadsheet exports become typed workbooks: currency strings, thousands separators and percentages are parsed into real numbers with matching formats, because a grid of text that Excel cannot sum is not a spreadsheet, it is a picture of one.",
       },
       { type: "h2", text: "Every surface lies differently" },
       {
         type: "p",
-        text: "The discipline was resisting the shortcut of converting one output into another. Chained conversions compound each format's lies: pagination exists in PDF but not in a panel; DOCX has styles but no CSS; a spreadsheet wants your tables as data, not your layout as decoration. Each surface gets its own renderer from the spec, and each renderer is honest about what its format cannot say — instead of one canonical export degraded four ways.",
+        text: "The discipline was refusing the shortcut of converting one output into another, because chained conversions compound each format's compromises. Each surface renders from the spec and is honest about what it cannot say: charts become images, tabs become headed sections, diagrams ship as their source text in Word rather than as a broken picture.",
+      },
+      {
+        type: "p",
+        text: "The bugs were format-specific and educational. The rupee sign printed as boxes because the headless browser's container image had no font carrying that glyph — fixed by loading a web font and allow-listing only that host in the export's otherwise-total network blocker. A seven-column table clipped off the right edge of portrait A4, so wide tables now rotate the whole document to landscape. DOCX silently dropped every tab's content, because tab labels live in one list and tab bodies in another, paired only by position — the exporter looked for children nested under each label and found nothing. And Word's built-in header styles carry a centre tab stop that Word ignores but Google Docs' importer honours, so the same file looked right in Word and collapsed in Docs until the styles themselves were rewritten.",
       },
       { type: "h2", text: "Exports that stay put" },
       {
         type: "p",
-        text: "One small decision did outsized work: re-exporting updates the same external file instead of minting a copy. Report v3 lands in the same Google Doc that v2 created, so the link a user already shared quietly gets better, and nobody curates a folder of report-final-final-2. And because export-to-your-account means holding OAuth tokens, we treated ourselves as a credential custodian from day one: tokens encrypted at rest, scopes no wider than the job.",
+        text: "One small decision did outsized work: a mapping keyed by document, user and target, so a re-export overwrites the same external file instead of minting a copy. Report v3 lands in the same Google Doc v2 created, the link the user already shared quietly gets better, and nobody curates report-final-final-2. If the reader deleted the file, the export recreates it and updates the mapping; two users exporting the same document each get their own file.",
+      },
+      {
+        type: "p",
+        text: "Because export-to-your-account means holding OAuth grants, that part was built paranoid. The scope is the narrowest one that works — per-file access to files the app itself creates. The OAuth state parameter is signed, bound to the signed-in user and spent exactly once, after a review of the first design showed a classic login-CSRF: an attacker could start the flow with their own account and hand the callback to a victim, grafting the attacker's drive onto the victim's workspace. Tokens are encrypted at rest and the system fails closed — no valid key, no token operations, never plaintext. And one hard-won rule of API clients: never retry a failed file-create, because the provider may have committed the file before returning the error, and a retry mints duplicates. Updates retry; creates do not.",
       },
       {
         type: "ul",
         items: [
           "Export is a renderer, not an afterthought. Each target deserves a first-class mapping from the source of truth.",
           "Never chain conversions. Render every surface from the spec, or inherit the union of every format's compromises.",
-          "Update-in-place beats attachment sprawl: the shared link improving quietly is a feature users feel without naming.",
-          "The moment you store OAuth tokens you are in the credentials business — encrypt at rest and keep scopes narrow, before anyone asks.",
+          "Update-in-place beats attachment sprawl: a shared link that quietly improves is a feature users feel without naming.",
+          "OAuth state is an attack surface. Sign it, bind it to the user, spend it once — and encrypt every token you store, failing closed without the key.",
         ],
       },
     ],
@@ -449,30 +495,47 @@ export const blogPosts: BlogPost[] = [
     body: [
       {
         type: "p",
-        text: "Give a language model a document tool and it will write you a document — at length. Ours had a particular failure mode users noticed immediately: they would ask for a brief report and receive a sprawling one, many times the length they requested. The prompt said to respect the requested length. The model, on the whole, did not. Politeness turned out to be our enforcement mechanism, which is to say we had none.",
+        text: "Give a language model a document tool and it will write you a document — at length. Users would ask for a brief report and receive a sprawling one, many times the requested size, and when we reproduced it in an internal evaluation across several models, every single one ignored the cap. The best exhibit: one model wrote itself a generation brief asking for a two-page report “retaining all metrics and tables”. The contradiction was right there in its own words. The prompt asked for brevity; nothing enforced it; politeness was our enforcement mechanism, which is to say we had none.",
       },
       { type: "h2", text: "Enforce, don't request" },
       {
         type: "p",
-        text: "The fix was to reclassify the user's page limit from style guidance into a pipeline constraint. The prompt still asks — a model aimed at the right length produces better-shaped documents than one truncated after the fact — but the limit is now enforced where the document is built, not where it is requested. The general rule became one of the canvas's load-bearing principles: anything the user can set is checked by code, and the prompt is merely how we improve the odds of passing the check on the first try.",
+        text: "A document has no pages until it is exported, so enforcement starts with an estimator: visible characters per page plus a fixed weight per element — a chart costs about a third of a page, a table a sliver per row. A draft that exceeds the user's cap by more than a 1.3× tolerance gets exactly one condensation retry. The tolerance exists because borderline documents would otherwise retry-loop; the real failures weren't borderline, they were several times over.",
+      },
+      {
+        type: "p",
+        text: "Review reshaped the rule in an important way. The first version said the budget outranks completeness; a teammate pushed back that this would truncate data the agent had already gathered. The rule that shipped is “condense, never truncate”: aggregate to coarser granularity, compress analysis to conclusions, and if the content genuinely cannot fit, completeness wins and the reply says so. A limit should change the shape of the answer, not its truth.",
+      },
+      { type: "h2", text: "Then the model invented a cap" },
+      {
+        type: "p",
+        text: "Four days after enforcement shipped, a request with no length limit at all failed: the model had made up a two-page cap on its own, the estimator honestly rejected the honestly-sized draft, the retry could not fit a seven-section audit into two pages, and the document was lost. The prompt already said “never invent a cap”. Of course it did.",
+      },
+      {
+        type: "p",
+        text: "We built two provenance checks and deleted both. A regex that derived the cap from the user's message missed natural follow-ups like “make it 2 pages”. Quote-verification — the model must pass the user's own words, and a match gates enforcement — worked when the model quoted, but in production it sometimes passed a real cap without the quote, so genuine limits went silently unenforced. The final design trusts the cap at face value and makes being wrong cheap instead: an over-budget document that is structurally valid ships anyway, flagged, and the reply must admit it ran longer than asked. Now an invented cap costs one wasted retry and an apologetic sentence; a missed real cap would have brought the original bug back.",
+      },
+      {
+        type: "p",
+        text: "One more collision taught us about instruction design. “Make it two pages” on an existing document used to combine the edit rules — keep every element exactly as it is — with the budget rules — condense — in a single message, and the model would refuse, or return the body unchanged. No amount of emphasis fixed it. Splitting it into a dedicated budgeted-edit instruction did: it separates what never shrinks (findings, citations, caveats) from what condenses (data granularity). When two rules collide, the model picks one; resolve the collision structurally, don't shout.",
       },
       { type: "h2", text: "Same question, same window" },
       {
         type: "p",
-        text: "The second discipline was determinism. A reporting question is almost always a question about a date range, and “last month” is exactly the kind of phrase a model will happily resolve three different ways on three runs. So the model no longer resolves it. Date windows are computed server-side, once, deterministically, and the model receives concrete dates instead of the phrase. Two identical questions now describe the same slice of the world — which sounds small until you have tried to debug a report that disagrees with its own regeneration.",
+        text: "The date bug was quieter and worse. The date tool precomputed only a few preset look-backs; for anything else the model did its own calendar arithmetic, with an undocumented convention about where windows end — so a 28-day audit ran on a window shifted by one day, split into weekly buckets on the wrong days. First fix: the tool resolves any look-back length itself, deterministically, and the resolved window is frozen across every data call, bucket and label. Then the convention itself got reversed: “last N days” now excludes today by default, because today is a partial day, and comparing it against full days manufactures an apparent drop in every metric. Today joins the window only when the user explicitly asks, labelled as partial. And windows anchor to the ad account's own timezone — a UTC “yesterday” is still an unfinished day for an account west of UTC.",
       },
       { type: "h2", text: "Lead with the finding" },
       {
         type: "p",
-        text: "The last change was editorial rather than mechanical. Models narrate: first the setup, then the method, then — eventually — the point. Busy readers work the other way round. So generated reports were restructured to lead with the finding: the headline number or conclusion first, the supporting evidence beneath it. Combined with the hard time budget on generation — a run that cannot finish fails cleanly at the ceiling instead of hanging — the canvas stopped testing its users' patience at both ends.",
+        text: "The last discipline is editorial. Models narrate — setup, method, then eventually the point; busy readers work the other way round. So every data-bearing answer leads with what changed and why it matters before the document, and next actions come after it. And one carve-out to “you're a formatter, don't re-analyse”: arithmetic is not analysis. When both operands are in the source, the document computes the delta or the rate — a report that prints “not provided” next to two numbers it could subtract has stopped too soon.",
       },
       {
         type: "ul",
         items: [
-          "Prompts are requests; validators are guarantees. Anything a user can configure needs an enforcer, not an aspiration.",
-          "Take determinism away from the model on purpose: resolve time, and every other resolvable input, before the model sees it.",
-          "Structure is a quality lever that costs no accuracy — the same content, finding first, reads twice as well.",
-          "Verbosity is not a personality flaw to scold out of a model; it is a constraint to engineer.",
+          "Prompts are requests; validators are guarantees. Anything a user can set needs an enforcer, not an aspiration.",
+          "When a check can be silently wrong, redesign so that being wrong is cheap — a flagged overrun made trusting the model safe.",
+          "Take determinism away from the model on purpose: resolve time — in the right timezone — before the model ever sees it.",
+          "Two rules that collide in one message make the model pick one. Separate them structurally instead of repeating them louder.",
         ],
       },
     ],

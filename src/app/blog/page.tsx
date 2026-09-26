@@ -16,9 +16,9 @@ export default function BlogIndex() {
 
   return (
     <BlogShell>
-      <div className="mx-auto max-w-[760px] px-5 py-16 sm:px-8 sm:py-24">
+      <div className="mx-auto max-w-[1000px] px-5 py-16 sm:px-8 sm:py-24">
         <header>
-                    <h1 className="text-4xl font-bold tracking-[-0.035em] text-ink sm:text-5xl">Field notes</h1>
+          <h1 className="text-4xl font-bold tracking-[-0.035em] text-ink sm:text-5xl">Field notes</h1>
           <p className="pretty mt-5 max-w-[52ch] text-[15px] leading-relaxed text-muted">
             Longer write-ups of work at Strique that the ship log only headlines — bugs fixed, payloads shrunk,
             webhooks tamed. Systems are described generically, and numbers appear only where they were actually
@@ -26,7 +26,7 @@ export default function BlogIndex() {
           </p>
         </header>
 
-        <div className="mt-12 grid gap-5">
+        <div className="mt-12 grid gap-5 sm:grid-cols-2">
           {posts.map((post) => (
             <PostCard key={post.slug} post={post} />
           ))}

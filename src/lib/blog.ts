@@ -1,11 +1,25 @@
 import type { ShipKind } from "@/lib/data";
 
+export type FigureId =
+  | "payload-diet"
+  | "oom-expansion"
+  | "webhook-order"
+  | "stream-heartbeat"
+  | "ci-injection"
+  | "tool-pipeline"
+  | "dangling-repair"
+  | "version-pointer"
+  | "five-surfaces"
+  | "page-budget";
+
 export type BlogBlock =
   | { type: "p"; text: string }
   | { type: "h2"; text: string }
   | { type: "quote"; text: string }
   | { type: "code"; lang?: string; code: string }
-  | { type: "ul"; items: string[] };
+  | { type: "ul"; items: string[] }
+  /** A diagram from `components/figures`, with a caption shown beneath it. */
+  | { type: "figure"; figure: FigureId; caption: string };
 
 export interface BlogPost {
   slug: string;
@@ -52,6 +66,12 @@ export const blogPosts: BlogPost[] = [
       {
         type: "p",
         text: "So instead of judgement calls scattered across tool handlers, we wrote the rule down once: a stream policy under which every tool declares what the client actually renders, and only that crosses the wire. The full output stays server-side with the conversation state, where the model can use it.",
+      },
+      {
+        type: "figure",
+        figure: "payload-diet",
+        caption:
+          "One policy, two consumers: the model keeps the full tool output, the browser gets only the view its card renders. Bars show the average payload per conversation before and after.",
       },
       {
         type: "code",
@@ -109,6 +129,12 @@ export const blogPosts: BlogPost[] = [
         type: "p",
         text: "Second, cache reads were all-or-nothing. The uploaded file was cached and read back as a single blob, so at peak the process held several full copies of the data at once — the raw bytes, the decompressed archive and the parsed rows, all alive at the same time.",
       },
+      {
+        type: "figure",
+        figure: "oom-expansion",
+        caption:
+          "Square areas are to scale: a 5.7 MB upload became 414 MB of retained memory. Budgets and chunked reads bound the same file to effectively nothing.",
+      },
       { type: "h2", text: "Budgets, not hope" },
       {
         type: "p",
@@ -146,6 +172,12 @@ export const blogPosts: BlogPost[] = [
       {
         type: "p",
         text: "A subscription-updated event had been delayed in delivery. By the time it arrived, newer events had already moved the account forward; the late event described an older state of the subscription, and our handler applied whatever arrived as though it were the latest word. A stale snapshot overwrote a current one, and a paid account became a free one.",
+      },
+      {
+        type: "figure",
+        figure: "webhook-order",
+        caption:
+          "Creation order is not delivery order. Applying each payload lets a late, stale event win; re-reading the subscription on every event makes arrival order irrelevant.",
       },
       { type: "h2", text: "Webhooks are notifications, not state" },
       {
@@ -192,6 +224,12 @@ export const blogPosts: BlogPost[] = [
       {
         type: "p",
         text: "A server-sent-events connection looks like a long promise, but everything in the middle treats it as a short one. Load balancers apply idle timeouts. Proxies buffer or cut quiet connections. Browsers eventually give up on a silent response. During a long tool call we could go minutes without emitting a byte, and to every intermediary that is indistinguishable from a dead connection.",
+      },
+      {
+        type: "figure",
+        figure: "stream-heartbeat",
+        caption:
+          "The failure lives in the silence. Without traffic, an intermediary's idle timeout ends the stream mid-turn; small heartbeat events during the quiet stretch keep every hop open.",
       },
       { type: "h2", text: "Pay rent on the connection" },
       {
@@ -246,6 +284,12 @@ export const blogPosts: BlogPost[] = [
 - env:
     PR_TITLE: \${{ github.event.pull_request.title }}
   run: echo "Releasing: $PR_TITLE"`,
+      },
+      {
+        type: "figure",
+        figure: "ci-injection",
+        caption:
+          "The difference is ordering. Interpolation pastes the title into the script before bash parses it; an environment variable is only expanded after parsing, so the title can never become code.",
       },
       { type: "h2", text: "The outage was the proof of concept" },
       {
@@ -308,6 +352,12 @@ export const blogPosts: BlogPost[] = [
         text: "Crucially, the tool does not trust the orchestrator to relay the data. It reads the conversation record directly and classifies what it finds: the user's messages and the research memos from specialist sub-agents are protected findings; raw intermediate tool output is filler, truncated first when space runs out. Then one isolated, non-streaming, tool-less model call runs — the schema contract as its system prompt, the brief plus source as the user message — followed by validation, one retry with the exact validator error appended, and a tiered recovery path (drop the raw data, then split the findings into parts generated in parallel and merged deterministically), all under a single hard time ceiling.",
       },
       {
+        type: "figure",
+        figure: "tool-pipeline",
+        caption:
+          "A brief goes in and an id comes out. The document is only written after the reply commits, and the browser fetches it by the server's id, never the one the model typed.",
+      },
+      {
         type: "p",
         text: "The tool hands back only an id — the document body never rides the chat stream. The validated document is held in memory and written to the database only after the reply row commits, so a message can never reference a row that does not exist. And the server rewrites every document tag in the reply with the authoritative id, because we learned that a model asked to echo a 36-character id will occasionally add a letter: one extra character, one 404, one confused user staring at an empty panel. The rule that came out of it: never look anything up by an identifier the model typed.",
       },
@@ -355,6 +405,12 @@ export const blogPosts: BlogPost[] = [
       {
         type: "p",
         text: "So the fix was not better detection; it was repair. Before the strict checks run, a pass walks every child reference that fails to resolve. It normalises the key — lower-case, punctuation stripped — and looks for an existing element with the same normal form. If one exists, the reference is rewired to it; if nothing matches, the reference is pruned. Tabs and accordions pair labels to children by position, so pruning a child also drops its label — otherwise every later tab is mislabelled by one.",
+      },
+      {
+        type: "figure",
+        figure: "dangling-repair",
+        caption:
+          "Keys are illustrative. A near-miss key is rewired to the unmounted element it normalises to; a key with no match at all is pruned. Either way the document survives.",
       },
       {
         type: "p",
@@ -407,6 +463,12 @@ export const blogPosts: BlogPost[] = [
         text: "One numbering rule does quiet, load-bearing work: a new version is numbered from the highest number that exists, not from the pointer. Restore v2 of five versions and then save an edit, and you get v6 — history branches forward, and v3 through v5 remain exactly where they were, still restorable. Nothing you did before a restore can be destroyed by what you do after it.",
       },
       {
+        type: "figure",
+        figure: "version-pointer",
+        caption:
+          "Restore moves the pointer; editing afterwards appends past the highest version. The AI and your own edits share one chain, and every link stays restorable.",
+      },
+      {
         type: "p",
         text: "Versioning also fixed a small, maddening UI wrong: every chat card for a document used to open the latest body, so older versions were unreachable. But each generated version already records which assistant message produced it, and each card knows its own message — match the two, and every card opens the version it announced. No schema change, and it worked retroactively for every old conversation.",
       },
@@ -446,6 +508,12 @@ export const blogPosts: BlogPost[] = [
       {
         type: "p",
         text: "A report that lives only inside a chat panel is half a product. Reports exist to leave — they get attached to emails, dropped into decks, filed with clients, edited by people who will never open our app. So the canvas had to meet documents where documents live, and that meant one source of truth wearing five bodies: the interactive panel, PDF, DOCX, spreadsheets, and files in the reader's own Google Drive or OneDrive.",
+      },
+      {
+        type: "figure",
+        figure: "five-surfaces",
+        caption:
+          "Every surface has its own renderer reading the same spec. Nothing is converted from another export, so no format inherits another's compromises.",
       },
       {
         type: "p",
@@ -516,6 +584,12 @@ export const blogPosts: BlogPost[] = [
         text: "We built two provenance checks and deleted both. A regex that derived the cap from the user's message missed natural follow-ups like “make it 2 pages”. Quote-verification — the model must pass the user's own words, and a match gates enforcement — worked when the model quoted, but in production it sometimes passed a real cap without the quote, so genuine limits went silently unenforced. The final design trusts the cap at face value and makes being wrong cheap instead: an over-budget document that is structurally valid ships anyway, flagged, and the reply must admit it ran longer than asked. Now an invented cap costs one wasted retry and an apologetic sentence; a missed real cap would have brought the original bug back.",
       },
       {
+        type: "figure",
+        figure: "page-budget",
+        caption:
+          "Every path ends in a document. An over-budget draft that is structurally valid still ships, and it's flagged so the reply has to own the overrun.",
+      },
+      {
         type: "p",
         text: "One more collision taught us about instruction design. “Make it two pages” on an existing document used to combine the edit rules — keep every element exactly as it is — with the budget rules — condense — in a single message, and the model would refuse, or return the body unchanged. No amount of emphasis fixed it. Splitting it into a dedicated budgeted-edit instruction did: it separates what never shrinks (findings, citations, caveats) from what condenses (data granularity). When two rules collide, the model picks one; resolve the collision structurally, don't shout.",
       },
@@ -550,6 +624,8 @@ const blockWords = (block: BlogBlock): number => {
     case "h2":
     case "quote":
       return block.text.split(/\s+/).length;
+    case "figure":
+      return block.caption.split(/\s+/).length;
     case "ul":
       return block.items.join(" ").split(/\s+/).length;
     case "code":

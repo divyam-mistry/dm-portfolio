@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { FIGURES } from "@/components/figures";
 import type { BlogBlock } from "@/lib/blog";
 
 /** Renders `inline code` spans inside body text. */
@@ -62,6 +63,17 @@ export default function PostBody({ blocks }: { blocks: BlogBlock[] }) {
                 ))}
               </ul>
             );
+          case "figure": {
+            const Diagram = FIGURES[block.figure];
+            return (
+              <figure key={i} className="rounded-xl border border-rule bg-paper-sunken/50 p-4 sm:p-5">
+                <Diagram />
+                <figcaption className="pretty mt-4 border-t border-rule pt-3 text-[13px] leading-relaxed text-muted">
+                  {block.caption}
+                </figcaption>
+              </figure>
+            );
+          }
         }
       })}
     </div>

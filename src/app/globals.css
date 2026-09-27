@@ -162,6 +162,54 @@ body {
   animation: caret-blink 1s step-end infinite;
 }
 
+/* Blog figure motion. Each rests at its meaningful state when motion is reduced. */
+.fig-flow {
+  stroke-dasharray: 5 5;
+  animation: fig-dash 1s linear infinite;
+}
+
+@keyframes fig-dash {
+  to {
+    stroke-dashoffset: -10;
+  }
+}
+
+.fig-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: fig-pulse 1.75s ease-in-out infinite;
+}
+
+@keyframes fig-pulse {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.6);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Starts at the "before" width (--from × its own width) and shrinks to its real size. */
+.fig-shrink {
+  transform-box: fill-box;
+  transform-origin: left center;
+  animation: fig-shrink 3.2s ease-in-out infinite alternate;
+}
+
+@keyframes fig-shrink {
+  0%,
+  20% {
+    transform: scaleX(var(--from));
+  }
+  70%,
+  100% {
+    transform: scaleX(1);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

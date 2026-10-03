@@ -15,6 +15,16 @@ function inline(text: string): ReactNode[] {
   );
 }
 
+/** The context box that puts a reader outside the team on the same page before the post begins. */
+export function PostSetupBox({ setup }: { setup: string }) {
+  return (
+    <aside aria-label="The setup" className="rounded-xl border border-rule bg-paper-sunken/50 p-5 sm:p-6">
+      <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">The setup</p>
+      <p className="pretty mt-3 text-[15px] leading-relaxed text-ink-soft sm:text-[16px]">{inline(setup)}</p>
+    </aside>
+  );
+}
+
 export default function PostBody({ blocks }: { blocks: BlogBlock[] }) {
   return (
     <div className="space-y-6">

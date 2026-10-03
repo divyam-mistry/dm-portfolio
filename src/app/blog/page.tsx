@@ -6,7 +6,7 @@ import { blogPosts } from "@/lib/blog";
 export const metadata: Metadata = {
   title: "Field notes — Divyam Mistry",
   description:
-    "Engineering write-ups from production: streaming payload diets, OOM post-mortems, webhook races, long-lived SSE streams and CI security.",
+    "Engineering write-ups from production: Postgres tuning, Stripe billing traps, auth on the hot path, streaming payloads, OOM post-mortems, agent tool design and LLM reliability.",
   alternates: { canonical: "/blog" },
   openGraph: { url: "/blog", title: "Field notes — Divyam Mistry" },
 };
@@ -20,7 +20,7 @@ export default function BlogIndex() {
         <header>
           <h1 className="text-4xl font-bold tracking-[-0.035em] text-ink sm:text-5xl">Field notes</h1>
           <p className="pretty mt-5 max-w-[52ch] text-[15px] leading-relaxed text-muted">
-            Longer write-ups of work at Strique that the ship log only headlines — bugs fixed, payloads shrunk,
+            Longer write-ups of production work that the ship log only headlines — bugs fixed, payloads shrunk,
             webhooks tamed. Systems are described generically, and numbers appear only where they were actually
             measured.
           </p>

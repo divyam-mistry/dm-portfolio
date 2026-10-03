@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import BlogShell from "@/components/BlogShell";
-import PostBody from "@/components/PostBody";
+import PostBody, { PostSetupBox } from "@/components/PostBody";
 import { blogPosts, getPost, readingTime } from "@/lib/blog";
 import type { ShipKind } from "@/lib/data";
 
@@ -51,7 +51,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
         <header>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[11px] text-muted">
             <Link href="/blog" className="ink-link uppercase tracking-[0.14em] text-accent">
-              § Field notes
+              ← Field notes
             </Link>
             <span className="text-faint">/</span>
             <span style={{ color: kindColor(post.kind) }}>{post.kind}</span>
@@ -63,6 +63,10 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
           <h1 className="balance mt-4 font-semibold tracking-[-0.03em] text-4xl leading-[1.05] text-ink sm:text-5xl">{post.title}</h1>
           <p className="pretty mt-5 text-lg leading-relaxed text-muted">{post.dek}</p>
         </header>
+
+        <div className="mt-10">
+          <PostSetupBox setup={post.setup} />
+        </div>
 
         <div className="mt-10 border-t border-rule-strong pt-10">
           <PostBody blocks={post.body} />

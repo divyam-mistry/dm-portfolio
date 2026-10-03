@@ -32,7 +32,7 @@ function RecordCard({
 export default function Record() {
   return (
     <Section id="record" title="Record" subtitle="Off-the-clock results, schooling, and paperwork.">
-      <div className="grid gap-5 sm:grid-cols-3">
+      <div className="grid gap-5 sm:grid-cols-2">
         {achievements.map((a, i) => (
           <FadeIn key={a.title} delay={i * 0.06} className="h-full">
             <RecordCard label={`Record ${String(i + 1).padStart(2, "0")}`} chip={a.mark} title={a.title} body={a.description} />

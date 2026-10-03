@@ -35,12 +35,12 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
 
   const commands = useMemo<Command[]>(
     () => [
-      { id: "top", group: "Go to", label: "Top of page", hint: "§ 00", run: () => jump("top") },
+      { id: "top", group: "Go to", label: "Top of page", hint: "#00", run: () => jump("top") },
       ...sections.map((s) => ({
         id: s.id,
         group: "Go to",
         label: s.label,
-        hint: `§ ${s.index}`,
+        hint: `#${s.index}`,
         keywords: `${s.id} ${s.nav ?? ""}`,
         run: () => jump(s.id),
       })),

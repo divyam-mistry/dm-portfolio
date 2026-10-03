@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title,
   description,
-  keywords: ["Divyam Mistry", "Software Engineer", "Strique", "Next.js", "Python", "FastAPI", "Go", "Portfolio"],
+  keywords: ["Divyam Mistry", "Software Engineer", "Strique", "Next.js", "Python", "FastAPI", "Portfolio"],
   authors: [{ name: "Divyam Mistry", url: siteUrl }],
   alternates: { canonical: "/" },
   openGraph: {

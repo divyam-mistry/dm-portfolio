@@ -64,20 +64,20 @@ function PayloadDiet() {
 
 function OomExpansion() {
   return (
-    <Figure height={312} label="A 5.7 MB spreadsheet expanded to 414 MB retained in memory and was OOM-killed in a 1 GiB pod; with budgets and chunked reads it retains roughly nothing.">
+    <Figure height={312} label="A 5.7 MB spreadsheet held 11.5 million characters that three code paths each kept in full, taking resident memory to 414 MB until a 1 GiB pod was OOM-killed; with budgets and chunked reads the same reads return memory.">
       <Kicker x={20} y={24}>Before</Kicker>
       <rect x={30} y={92} width={20} height={20} rx={3} style={{ fill: tone("ink") }} />
       <Label x={40} y={130} anchor="middle" size={10}>5.7 MB</Label>
-      <Label x={198} y={58} anchor="middle">decompress the archive</Label>
-      <Label x={198} y={74} anchor="middle">every cell → a Python object</Label>
-      <Label x={198} y={90} anchor="middle">several copies alive at once</Label>
+      <Label x={198} y={58} anchor="middle">34.8 MB of XML → 11.5 M chars</Label>
+      <Label x={198} y={74} anchor="middle">three paths hold it in full</Label>
+      <Label x={198} y={90} anchor="middle">re-decoded on each of 16 reads</Label>
       <Arrow pts={[[62, 102], [338, 102]]} t="fix" />
       <rect x={345} y={20} width={170} height={170} rx={6} strokeWidth={1.5} style={{ fill: wash("fix", 18), stroke: tone("fix") }} />
       <Label x={430} y={100} anchor="middle" size={24} t="ink" weight={700} sans>
         414 MB
       </Label>
-      <Label x={430} y={120} anchor="middle">retained for one upload</Label>
-      <Label x={430} y={136} anchor="middle">≈ 70× the file on disk</Label>
+      <Label x={430} y={120} anchor="middle">resident after 16 reads</Label>
+      <Label x={430} y={136} anchor="middle">(153 MB before the file)</Label>
       <Label x={540} y={80} size={12} t="ink" weight={600} sans>
         1 GiB pod
       </Label>
@@ -89,17 +89,18 @@ function OomExpansion() {
       <Kicker x={20} y={236}>After</Kicker>
       <rect x={30} y={256} width={20} height={20} rx={3} style={{ fill: tone("ink") }} />
       <Label x={40} y={294} anchor="middle" size={10}>5.7 MB</Label>
-      <Label x={198} y={256} anchor="middle">budget rows · cells · output size</Label>
+      <Label x={198} y={256} anchor="middle">2 M-char budget · lazy extractors</Label>
       <Arrow pts={[[62, 266], [338, 266]]} t="perf" />
-      <Label x={198} y={286} anchor="middle">read the cache in chunks</Label>
+      <Label x={198} y={286} anchor="middle">each read fetches ≤ 2 chunks</Label>
       <rect x={345} y={259} width={14} height={14} rx={2} strokeDasharray="3 2" style={{ fill: "none", stroke: tone("perf") }} />
       <Label x={368} y={271} size={14} t="perf" weight={700} sans>
-        ≈ 0 retained
+        −15 MB
       </Label>
+      <Label x={368} y={288} size={10}>memory handed back</Label>
       <Label x={540} y={262} size={12} t="ink" weight={600} sans>
         same 1 GiB pod
       </Label>
-      <Label x={540} y={280} t="perf">0 restarts, reply completes</Label>
+      <Label x={540} y={280} t="perf">655 Mi peak, 0 restarts</Label>
     </Figure>
   );
 }
@@ -210,23 +211,23 @@ function StreamHeartbeat() {
 function CiInjection() {
   const col = (x: number, fixed: boolean) => (
     <g>
-      <Box x={x} y={36} w={320} h={58} title="PR title — anyone can write it" sub={["fix: $(whoami)"]} />
+      <Box x={x} y={36} w={320} h={58} title="PR text — anyone can write it" sub={["promotes `dev` to `main`"]} />
       <Arrow pts={[[x + 160, 94], [x + 160, 126]]} t={fixed ? "perf" : "accent"} />
       {fixed ? (
-        <Box x={x} y={128} w={320} h={58} title="Runner sets env PR_TITLE" sub={['run: echo "Releasing: $PR_TITLE"']} />
+        <Box x={x} y={128} w={320} h={58} title="Runner sets env PR_BODY" sub={['run: echo "$PR_BODY"']} />
       ) : (
-        <Box x={x} y={128} w={320} h={58} title="Actions expands ${{ … }} first" sub={['echo "Releasing: fix: $(whoami)"']} />
+        <Box x={x} y={128} w={320} h={58} title="Actions expands ${{ … }} first" sub={['echo "promotes `dev` to `main`"']} />
       )}
       <Arrow pts={[[x + 160, 186], [x + 160, 218]]} t={fixed ? "perf" : "accent"} />
       {fixed ? (
-        <Box x={x} y={220} w={320} h={58} title="bash parses, then expands" sub={["the title is only ever data ✓"]} t="perf" filled />
+        <Box x={x} y={220} w={320} h={58} title="bash parses, then expands" sub={["the text is only ever data ✓"]} t="perf" filled />
       ) : (
-        <Box x={x} y={220} w={320} h={58} title="bash parses the pasted script" sub={["$(whoami) runs as a command ✗"]} t="accent" filled />
+        <Box x={x} y={220} w={320} h={58} title="bash parses the pasted script" sub={["`dev` runs as a command ✗"]} t="accent" filled />
       )}
     </g>
   );
   return (
-    <Figure height={290} label="Interpolating a PR title into a run block pastes it into the script before bash parses it, so a command substitution executes; passing it through an environment variable keeps it as data.">
+    <Figure height={290} label="Interpolating pull-request text into a run block pastes it into the script before bash parses it, so backticks run as command substitution; passing it through an environment variable keeps it as data.">
       <Kicker x={20} y={22} t="accent">Interpolated · vulnerable</Kicker>
       <Kicker x={380} y={22} t="perf">Through env · fixed</Kicker>
       {col(20, false)}
@@ -239,24 +240,22 @@ function CiInjection() {
 
 function ToolPipeline() {
   const steps = [
-    { title: "Pull findings", sub: ["from the", "conversation"] },
+    { title: "Gather source", sub: ["reads the data", "itself"] },
     { title: "Isolated call", sub: ["one model,", "no tools"] },
     { title: "Validate", sub: ["repair, then", "check"] },
     { title: "Retry once", sub: ["with the", "exact error"] },
   ];
   const after = [
-    { title: "Return only an id", sub: ["the body never", "rides the chat"], t: "accent" as Tone },
-    { title: "Reply row commits", sub: ["the message is saved"], t: "ink" as Tone },
-    { title: "Persist + rewrite tag", sub: ["true id replaces", "the typed one"], t: "ink" as Tone },
-    { title: "Browser fetches by id", sub: ["after the turn ends"], t: "perf" as Tone },
+    { title: "Return an id", sub: ["the body never", "rides the chat"], t: "accent" as Tone },
+    { title: "Store the document", sub: ["under the server's id"], t: "ink" as Tone },
+    { title: "Client fetches by id", sub: ["never a model-typed id"], t: "perf" as Tone },
   ];
   return (
-    <Figure height={326} label="The orchestrator sends a brief to the report tool, which pulls findings, makes one isolated call, validates and retries once, then returns only an id; the document is persisted after the reply commits and fetched by id.">
-      <Box x={20} y={48} w={150} h={62} title="Orchestrator" sub={["writes a small brief"]} />
+    <Figure height={326} label="The answering model calls a document tool with a short brief; the tool gathers its own source data, makes one isolated call, validates and retries once, then returns only an id that the client uses to fetch the stored document.">
+      <Box x={20} y={48} w={150} h={62} title="Answering model" sub={["sends a short brief"]} />
       <Arrow pts={[[170, 79], [210, 79]]} t="accent" flow />
-      <Label x={190} y={70} anchor="middle" size={9.5}>brief</Label>
       <rect x={200} y={14} width={500} height={150} rx={10} strokeDasharray="5 4" style={{ fill: "none", stroke: "var(--rule-strong)" }} />
-      <Kicker x={214} y={34}>Report tool</Kicker>
+      <Kicker x={214} y={34}>Document tool</Kicker>
       {steps.map((s, i) => (
         <g key={s.title}>
           <Box x={214 + i * 122} y={48} w={110} h={62} title={s.title} sub={s.sub} t={i === 2 ? "fix" : "ink"} filled={i === 2} />
@@ -264,13 +263,13 @@ function ToolPipeline() {
         </g>
       ))}
       <Label x={450} y={142} anchor="middle" size={10.5}>
-        tiered recovery if it overflows · one hard time ceiling over all of it
+        one hard time ceiling over all of it
       </Label>
-      <Arrow pts={[[635, 110], [635, 180], [95, 180], [95, 196]]} t="accent" flow />
+      <Arrow pts={[[635, 110], [635, 180], [120, 180], [120, 196]]} t="accent" flow />
       {after.map((s, i) => (
         <g key={s.title}>
-          <Box x={20 + i * 176} y={198} w={150} h={62} title={s.title} sub={s.sub} t={s.t} filled={s.t !== "ink"} />
-          {i < 3 && <Arrow pts={[[170 + i * 176, 229], [196 + i * 176, 229]]} flow />}
+          <Box x={20 + i * 240} y={198} w={200} h={62} title={s.title} sub={s.sub} t={s.t} filled={s.t !== "ink"} />
+          {i < 2 && <Arrow pts={[[220 + i * 240, 229], [258 + i * 240, 229]]} flow />}
         </g>
       ))}
       <rect x={20} y={280} width={680} height={34} rx={8} strokeDasharray="5 4" style={{ fill: wash("accent", 6), stroke: tone("accent") }} />
@@ -510,7 +509,588 @@ function PageBudget() {
   );
 }
 
+/* ——— Fast alone, slow together ——— */
+
+function QueryBars({ y, title, before, after, pct }: { y: number; title: string; before: number; after: number; pct: string }) {
+  const x = 220;
+  const k = 340 / 63.8;
+  const bw = before * k;
+  const aw = Math.max(after * k, 3);
+  return (
+    <g>
+      <Label x={20} y={y + 23} size={12} t="ink" weight={600} sans>
+        {title}
+      </Label>
+      <rect x={x} y={y + 4} width={bw} height={12} rx={3} style={{ fill: wash("muted", 35) }} />
+      <Label x={x + bw + 8} y={y + 14} size={10}>{`${before} s`}</Label>
+      <rect x={x} y={y + 22} width={aw} height={12} rx={3} style={{ fill: tone("perf") }} />
+      <Label x={x + aw + 8} y={y + 32} size={10} t="perf">{`${after} s`}</Label>
+      <Label x={700} y={y + 26} anchor="end" size={14} t="perf" weight={700} sans>
+        {pct}
+      </Label>
+    </g>
+  );
+}
+
+function QueryTuning() {
+  return (
+    <Figure height={306} label="Four slow queries fell by 80 to 98 percent in isolated runs after indexing and planner tuning, but under three concurrent users the tuned report query A doubled to 26.3 seconds because no parallel workers were launched.">
+      <rect x={220} y={10} width={12} height={10} rx={2} style={{ fill: wash("muted", 35) }} />
+      <Label x={238} y={19} size={10}>before</Label>
+      <rect x={292} y={10} width={12} height={10} rx={2} style={{ fill: tone("perf") }} />
+      <Label x={310} y={19} size={10}>after · isolated EXPLAIN ANALYZE</Label>
+      <QueryBars y={34} title="Report query A" before={63.8} after={12.4} pct="−80.5%" />
+      <QueryBars y={88} title="Report query B" before={37.6} after={6.9} pct="−81.7%" />
+      <QueryBars y={142} title="Report query C" before={30.8} after={3.1} pct="−90.0%" />
+      <QueryBars y={196} title="Catalogue query" before={35.4} after={0.78} pct="−97.8%" />
+      <line x1={20} x2={700} y1={250} y2={250} style={{ stroke: "var(--rule)" }} />
+      <Kicker x={20} y={274} t="accent">
+        Under load
+      </Kicker>
+      <Label x={110} y={274}>3 concurrent users: the tuned 12.4 s query took 26.3 s</Label>
+      <Label x={110} y={292} t="accent">
+        the plan said Workers Planned: 2 · Workers Launched: 0
+      </Label>
+    </Figure>
+  );
+}
+
+/* ——— Six Stripe assumptions ——— */
+
+function PayThenApply() {
+  return (
+    <Figure height={306} label="Changing the plan before charging lets a cancelled 3-D Secure challenge keep the upgrade; a pending update applies the change only once the invoice is paid, and expires otherwise.">
+      <Kicker x={20} y={22} t="accent">
+        Before · change the plan, then charge
+      </Kicker>
+      <Box x={20} y={34} w={140} h={56} title="Update items" sub={["plan switches now"]} />
+      <Arrow pts={[[160, 62], [198, 62]]} t="accent" />
+      <Box x={200} y={34} w={140} h={56} title="Confirm payment" sub={["3-D Secure challenge"]} />
+      <Arrow pts={[[340, 62], [378, 62]]} t="accent" />
+      <Box x={380} y={34} w={140} h={56} title="User cancels" sub={["challenge abandoned"]} />
+      <Arrow pts={[[520, 62], [558, 62]]} t="accent" />
+      <Box x={560} y={34} w={140} h={56} title="Plan kept" sub={["nobody paid ✗"]} t="accent" filled />
+      <line x1={20} x2={700} y1={116} y2={116} style={{ stroke: "var(--rule)" }} />
+      <Kicker x={20} y={142} t="perf">
+        After · pending_if_incomplete
+      </Kicker>
+      <Box x={20} y={176} w={140} h={56} title="Pending update" sub={["plan unchanged"]} />
+      <Arrow pts={[[160, 204], [198, 204]]} t="perf" />
+      <Box x={200} y={176} w={140} h={56} title="Confirm payment" sub={["3-D Secure challenge"]} />
+      <Arrow pts={[[340, 196], [398, 175]]} t="perf" />
+      <Arrow pts={[[340, 212], [398, 239]]} t="fix" />
+      <Box x={400} y={150} w={300} h={50} title="Invoice paid → update applied" sub={["the plan changes only now ✓"]} t="perf" filled />
+      <Box x={400} y={214} w={300} h={50} title="Not paid → pending update expires" sub={["the plan never changed ✓"]} t="fix" filled />
+      <Label x={20} y={292} size={10} t="faint">
+        default_incomplete is for creating subscriptions — on an update it applies the change immediately
+      </Label>
+    </Figure>
+  );
+}
+
+/* ——— A server action is a public endpoint ——— */
+
+function OneGate() {
+  const doors = [
+    { title: "Button in the UI", sub: "the path we click-test" },
+    { title: "Direct POST to the action", sub: "anyone who loads the page" },
+    { title: "Agent tool call", sub: "no controller involved" },
+    { title: "Scheduled automation", sub: "no request at all" },
+  ];
+  return (
+    <Figure height={280} label="Four ways in — a UI button, a direct call to the server action, an agent tool and a scheduled automation — all pass the same service-layer check before reaching data; a check in the UI guards only one of them.">
+      {doors.map((d, i) => (
+        <g key={d.title}>
+          <Box x={20} y={16 + i * 62} w={210} h={50} title={d.title} sub={[d.sub]} />
+          <Arrow pts={[[230, 41 + i * 62], [318, 116 + i * 14]]} t="perf" flow />
+        </g>
+      ))}
+      <Label x={420} y={40} anchor="middle" t="accent" weight={600}>
+        ✕ a check in the UI
+      </Label>
+      <Label x={420} y={56} anchor="middle" size={10.5}>
+        guards one door of four
+      </Label>
+      <Box x={320} y={96} w={200} h={90} title="Service chokepoint" sub={["identity from the session", "authorisation", "plan entitlement"]} t="perf" filled />
+      <Arrow pts={[[520, 141], [578, 141]]} t="perf" />
+      <Box x={580} y={111} w={120} h={60} title="Data" sub={["one way in"]} />
+      <Label x={20} y={272} size={10} t="faint">
+        every door gets the same checks, as if the caller were hostile and no UI existed
+      </Label>
+    </Figure>
+  );
+}
+
+/* ——— Every model call has a price ——— */
+
+function MeteringChokepoint() {
+  const paths: { title: string; sub: string; t: Tone }[] = [
+    { title: "Main agent loop", sub: "metered from the start", t: "ink" },
+    { title: "Side model calls", sub: "outside the loop: free", t: "accent" },
+    { title: "Vision calls", sub: "was unmetered", t: "accent" },
+    { title: "Image · video", sub: "4K tier priced at 0", t: "accent" },
+  ];
+  return (
+    <Figure height={300} label="Every path that calls a model — the main agent loop, side model calls, vision calls and media generation — goes through one canonical model key, a cost catalogue where unknown never means zero, and a ledger row per charge.">
+      {paths.map((p, i) => (
+        <g key={p.title}>
+          <Box x={20} y={14 + i * 56} w={190} h={46} title={p.title} sub={[p.sub]} t={p.t} />
+          <Arrow pts={[[210, 37 + i * 56], [268, 92 + i * 12]]} t="infra" flow />
+        </g>
+      ))}
+      <Box x={270} y={74} w={190} h={80} title="Canonical model key" sub={["gateway prefix stripped", "once, in one place"]} t="infra" filled />
+      <Arrow pts={[[460, 100], [508, 60]]} t="infra" />
+      <Box x={510} y={20} w={190} h={64} title="Cost catalogue" sub={["unknown → default rate,", "never zero"]} />
+      <Arrow pts={[[605, 84], [605, 128]]} t="perf" />
+      <Box x={510} y={130} w={190} h={64} title="Wallet + ledger" sub={["one row per charge"]} t="perf" filled />
+      <line x1={20} x2={700} y1={246} y2={246} style={{ stroke: "var(--rule)" }} />
+      <Kicker x={20} y={268}>Audits</Kicker>
+      <Label x={90} y={268}>per model: every one that ran reconciled · 0 billing failures</Label>
+      <Label x={90} y={288}>ledger vs traces, 62 conversations: 0 missed charges · cost ratio 1.000</Label>
+    </Figure>
+  );
+}
+
+/* ——— When your auth provider is slow ——— */
+
+function HotPath() {
+  return (
+    <Figure height={262} label="Before, every AI request asked the identity provider's API about memberships and hung until a 60-second timeout during its incident; after, the route combines a client hint with a signed claim locally and makes no provider calls.">
+      <Kicker x={20} y={22} t="accent">
+        Before · ask the provider on every request
+      </Kicker>
+      <Box x={20} y={34} w={150} h={56} title="Browser" sub={["any AI request"]} />
+      <Arrow pts={[[170, 62], [208, 62]]} />
+      <Box x={210} y={34} w={170} h={56} title="AI route" sub={["needs memberships"]} />
+      <Arrow pts={[[380, 62], [418, 62]]} t="accent" />
+      <Box x={420} y={34} w={150} h={56} title="Provider API" sub={["membership lookup"]} t="accent" dashed />
+      <Label x={582} y={56} t="accent" weight={600}>
+        slow → hangs
+      </Label>
+      <Label x={582} y={74} size={10.5}>
+        60 s timeout, 504
+      </Label>
+      <line x1={20} x2={700} y1={116} y2={116} style={{ stroke: "var(--rule)" }} />
+      <Kicker x={20} y={142} t="perf">
+        After · decide locally
+      </Kicker>
+      <Box x={20} y={154} w={150} h={56} title="Browser" sub={["sends a cached hint"]} />
+      <Arrow pts={[[170, 182], [208, 182]]} t="perf" flow />
+      <Box x={210} y={154} w={210} h={56} title="AI route" sub={["hint AND signed claim"]} t="perf" filled />
+      <Arrow pts={[[420, 182], [468, 182]]} t="perf" flow />
+      <Box x={470} y={154} w={230} h={56} title="Response" sub={["0 calls to the provider"]} t="perf" />
+      <Label x={20} y={246} size={10.5}>
+        no signed claim → the hint is ignored, whatever the client sends
+      </Label>
+    </Figure>
+  );
+}
+
+/* ——— Three quiet React Query behaviours ——— */
+
+function Screen({ x, kicker, kt, url, lines, msgs, verdict, vt }: { x: number; kicker: string; kt: Tone; url: string; lines: string[]; msgs?: Tone; verdict: string; vt: Tone }) {
+  return (
+    <g>
+      <Kicker x={x} y={22} t={kt}>
+        {kicker}
+      </Kicker>
+      <rect x={x} y={34} width={200} height={196} rx={8} strokeWidth={1.25} style={{ fill: "var(--paper-raised)", stroke: "var(--rule-strong)" }} />
+      <Label x={x + 12} y={52} size={10.5} t="ink">
+        {url}
+      </Label>
+      <line x1={x} x2={x + 200} y1={62} y2={62} style={{ stroke: "var(--rule)" }} />
+      {lines.map((l, i) => (
+        <Label key={l} x={x + 12} y={80 + i * 15} size={10}>
+          {l}
+        </Label>
+      ))}
+      {msgs ? (
+        [0, 1, 2].map((i) => (
+          <rect key={i} x={x + 12 + (i % 2) * 40} y={122 + i * 28} width={i % 2 ? 136 : 150} height={18} rx={5} style={{ fill: wash(msgs, 30) }} />
+        ))
+      ) : (
+        <Label x={x + 100} y={170} anchor="middle" size={10} t="faint">
+          (no messages yet)
+        </Label>
+      )}
+      <Label x={x + 100} y={252} anchor="middle" size={11.5} t={vt} weight={600} sans>
+        {verdict}
+      </Label>
+    </g>
+  );
+}
+
+function PlaceholderLeak() {
+  return (
+    <Figure height={266} label="With bare keepPreviousData, clicking New chat disables the query and the previous conversation's messages stay on screen; scoping the placeholder to the conversation id shows an empty chat.">
+      <Screen x={20} kicker="1 · chat A open" kt="faint" url="/chat/A" lines={["key [messages, A]", "query enabled"]} msgs="ink" verdict="shows A ✓" vt="perf" />
+      <Arrow pts={[[222, 132], [258, 132]]} />
+      <Screen
+        x={260}
+        kicker="2 · click New chat"
+        kt="accent"
+        url="/chat"
+        lines={["key [messages, undefined]", "disabled: placeholder stays"]}
+        msgs="accent"
+        verdict="still shows A ✗"
+        vt="accent"
+      />
+      <Arrow pts={[[462, 132], [498, 132]]} t="perf" />
+      <Screen x={500} kicker="3 · placeholder scoped to id" kt="perf" url="/chat" lines={["previous id ≠ current id", "→ no placeholder"]} verdict="empty new chat ✓" vt="perf" />
+    </Figure>
+  );
+}
+
+/* ——— Eighteen links in, zero out ——— */
+
+function LinkFunnel() {
+  const hops: { title: string; n: string; sub: string; t: Tone }[] = [
+    { title: "Source API", n: "18", sub: "preview links", t: "ink" },
+    { title: "Summary step", n: "19", sub: "one repeated", t: "ink" },
+    { title: "Document step", n: "0", sub: "never saw them", t: "accent" },
+    { title: "Word export", n: "0", sub: "clickable links", t: "accent" },
+  ];
+  const fixes = [
+    ["Name the field", "in tool descriptions"],
+    ["Carry it through", "keep links on merge"],
+    ["Corroborate", "exact match, or empty"],
+    ["Real hyperlinks", "scheme allowlist"],
+  ];
+  return (
+    <Figure height={272} label="One failing run: the source API returned 18 preview links, the summary step carried 19, the document step emitted 0 and the Word export had none clickable; each layer got its own deterministic fix.">
+      <Kicker x={20} y={22}>One failing run, counted at every hop</Kicker>
+      {hops.map((h, i) => {
+        const x = 20 + i * 176;
+        return (
+          <g key={h.title}>
+            <rect
+              x={x}
+              y={34}
+              width={152}
+              height={92}
+              rx={8}
+              strokeWidth={1.25}
+              style={{ fill: h.t === "accent" ? wash("accent", 12) : "var(--paper-raised)", stroke: h.t === "accent" ? tone("accent") : "var(--rule-strong)" }}
+            />
+            <Label x={x + 76} y={56} anchor="middle" size={12} t="ink" weight={600} sans>
+              {h.title}
+            </Label>
+            <Label x={x + 76} y={94} anchor="middle" size={28} t={h.t} weight={700} sans>
+              {h.n}
+            </Label>
+            <Label x={x + 76} y={114} anchor="middle" size={10}>
+              {h.sub}
+            </Label>
+            {i < 3 && <Arrow pts={[[x + 152, 80], [x + 174, 80]]} t={i === 1 ? "accent" : "muted"} />}
+            <Arrow pts={[[x + 76, 126], [x + 76, 166]]} t="perf" dashed />
+            <Box x={x} y={168} w={152} h={56} title={fixes[i][0]} sub={[fixes[i][1]]} t="perf" filled />
+          </g>
+        );
+      })}
+      <Label x={20} y={258} size={10.5} t="perf">
+        after: a live generate → edit → export run kept 3 of 3 links in both the DOCX and the PDF
+      </Label>
+    </Figure>
+  );
+}
+
+/* ——— LLM latency is an output-token budget ——— */
+
+function TokenBudget() {
+  const rows = [
+    { label: "Markdown", w: 100, v: "1×" },
+    { label: "compact JSON", w: 223, v: "2.23×" },
+    { label: "pretty JSON", w: 278, v: "2.78×" },
+  ];
+  return (
+    <Figure height={304} label="Wall-clock time is output tokens divided by throughput, so a typical report takes about a minute and a 160,000-token runaway about 31 minutes; nearly half of a JSON report's tokens are structure, and JSON costs 2.2 to 2.8 times the tokens of Markdown.">
+      <Label x={360} y={26} anchor="middle" size={14} t="ink" weight={600} sans>
+        wall-clock ≈ output tokens ÷ tokens per second
+      </Label>
+      <Label x={360} y={44} anchor="middle" size={10.5}>
+        measured throughput ≈ 70–75 tok/s
+      </Label>
+      <Kicker x={20} y={79}>Typical report</Kicker>
+      <rect x={200} y={69} width={14} height={14} rx={3} style={{ fill: tone("perf") }} />
+      <Label x={222} y={80}>3–6k tokens → 40–80 s</Label>
+      <Kicker x={20} y={107} t="accent">
+        Runaway
+      </Kicker>
+      <rect x={200} y={97} width={440} height={14} rx={3} style={{ fill: tone("accent") }} />
+      <Label x={648} y={108} t="accent">
+        ~31 min
+      </Label>
+      <Label x={200} y={128} size={10.5}>
+        ~160k tokens — before one hard ceiling and a matched output cap
+      </Label>
+      <line x1={20} x2={700} y1={146} y2={146} style={{ stroke: "var(--rule)" }} />
+      <Kicker x={20} y={170}>Where a JSON report&apos;s tokens go</Kicker>
+      <rect x={20} y={180} width={333} height={22} rx={3} style={{ fill: tone("perf") }} />
+      <rect x={353} y={180} width={313} height={22} style={{ fill: tone("infra") }} />
+      <rect x={666} y={180} width={34} height={22} rx={3} style={{ fill: tone("feat") }} />
+      <Label x={20} y={220}>data rows 49%</Label>
+      <Label x={353} y={220}>scaffolding 46%</Label>
+      <Label x={700} y={220} anchor="end">
+        narrative 5%
+      </Label>
+      <Kicker x={20} y={246}>Same content, relative tokens</Kicker>
+      {rows.map((r, i) => (
+        <g key={r.label}>
+          <Label x={20} y={266 + i * 15} size={10}>
+            {r.label}
+          </Label>
+          <rect x={130} y={258 + i * 15} width={r.w} height={10} rx={2} style={{ fill: i ? tone("infra") : tone("perf") }} />
+          <Label x={138 + r.w} y={266 + i * 15} size={10} t="ink">
+            {r.v}
+          </Label>
+        </g>
+      ))}
+    </Figure>
+  );
+}
+
+/* ——— The listener that removed itself ——— */
+
+function ListenerDeque() {
+  const cells = ["audit_hook", "on_commit", "cache_hook"];
+  return (
+    <Figure height={298} label="During commit, SQLAlchemy iterates its after_commit listeners; the one-shot listener removed itself mid-loop, raising a builtin RuntimeError that slipped past a wrapper catching only SQLAlchemy errors and failed the turn.">
+      <Box x={20} y={30} w={160} h={56} title="session.commit()" sub={["after_commit fires"]} />
+      <Arrow pts={[[180, 58], [228, 58]]} />
+      <Kicker x={230} y={22}>dispatch · for fn in listeners</Kicker>
+      {cells.map((c, i) => (
+        <g key={c}>
+          <rect
+            x={230 + i * 120}
+            y={34}
+            width={112}
+            height={48}
+            rx={6}
+            strokeWidth={i === 1 ? 1.6 : 1.2}
+            style={{ fill: i === 1 ? wash("accent", 16) : "var(--paper-raised)", stroke: i === 1 ? tone("accent") : "var(--rule-strong)" }}
+          />
+          <Label x={286 + i * 120} y={63} anchor="middle" size={11} t="ink">
+            {c}
+          </Label>
+        </g>
+      ))}
+      <Label x={596} y={63} size={12} t="faint">
+        …
+      </Label>
+      <Arrow pts={[[406, 82], [406, 98], [286, 98], [286, 86]]} t="accent" />
+      <Label x={418} y={102} size={10.5} t="accent">
+        event.remove(self) mid-loop
+      </Label>
+      <Arrow pts={[[315, 104], [315, 128]]} t="accent" />
+      <Box x={230} y={130} w={350} h={50} title="RuntimeError" sub={["deque mutated during iteration"]} t="accent" filled />
+      <Arrow pts={[[315, 180], [315, 206]]} t="accent" />
+      <Box x={230} y={208} w={170} h={56} title="Session wrapper" sub={["catches SQLAlchemyError"]} />
+      <Arrow pts={[[400, 236], [448, 236]]} t="accent" />
+      <Box x={450} y={208} w={250} h={56} title="Builtin error escapes" sub={["turn fails · charge not saved"]} t="accent" filled />
+      <Label x={20} y={150} t="ink" weight={600} sans>
+        fails every time
+      </Label>
+      <Label x={20} y={168}>a threshold is crossed —</Label>
+      <Label x={20} y={184}>rare enough to look random</Label>
+      <Label x={20} y={288} t="perf" weight={600}>
+        fix: event.listen(session, &quot;after_commit&quot;, fn, once=True)
+      </Label>
+    </Figure>
+  );
+}
+
+/* ——— Tell the agent what it didn't read ——— */
+
+function PartialRead() {
+  return (
+    <Figure height={282} label="A tool result capped silently leads the agent to answer from part of the data as if it were the whole; a result that carries truncation metadata lets the agent say what it covered.">
+      <Kicker x={20} y={22} t="accent">
+        Before · capped silently
+      </Kicker>
+      <Box x={20} y={34} w={250} h={62} title="Tool result" sub={["first 30k characters", "nothing says it was cut"]} />
+      <Arrow pts={[[270, 65], [318, 65]]} t="accent" />
+      <Box x={320} y={34} w={380} h={62} title="Agent's answer" sub={["reads a part as the whole", "confident and wrong ✗"]} t="accent" filled />
+      <line x1={20} x2={700} y1={120} y2={120} style={{ stroke: "var(--rule)" }} />
+      <Kicker x={20} y={146} t="perf">
+        After · partial results say so
+      </Kicker>
+      <Box x={20} y={158} w={250} h={80} title="Tool result + metadata" sub={["truncated: true", "pages_omitted: …", "original_chars: …"]} />
+      <Arrow pts={[[270, 198], [318, 198]]} t="perf" />
+      <Box x={320} y={158} w={380} h={80} title="Agent's answer" sub={["says what it covered", "offers to read the rest ✓"]} t="perf" filled />
+      <Label x={20} y={268} size={10.5}>
+        same contract for files (partial flag), audits (read 5 of 26 → PARTIAL), empty results (no data ≠ 0)
+      </Label>
+    </Figure>
+  );
+}
+
+/* ——— One 429, two meanings ——— */
+
+function Aimd() {
+  const climb = [
+    [70, 228],
+    [90, 222],
+    [110, 212],
+    [130, 198],
+    [150, 180],
+    [170, 158],
+    [170, 194],
+    [210, 187],
+    [250, 180],
+    [290, 173],
+    [330, 166],
+    [370, 158],
+    [370, 194],
+    [410, 187],
+    [450, 180],
+    [480, 180],
+    [500, 190],
+    [520, 200],
+    [540, 210],
+    [556, 230],
+  ];
+  const path = climb.map((p) => p.join(",")).join(" ");
+  const refused = [
+    [170, 158],
+    [370, 158],
+    [490, 184],
+    [510, 195],
+    [530, 205],
+  ];
+  return (
+    <Figure height={284} label="The publisher's in-flight requests climb from one, halve on each refusal and climb again; when refused writes stop landing for two minutes the account is marked saturated and the run stops with that reason recorded.">
+      <rect x={476} y={38} width={224} height={192} rx={6} style={{ fill: wash("accent", 8) }} />
+      <line x1={60} x2={60} y1={36} y2={230} style={{ stroke: "var(--rule-strong)" }} />
+      <line x1={60} x2={700} y1={230} y2={230} style={{ stroke: "var(--rule-strong)" }} />
+      <Label x={68} y={48} size={10} t="faint">
+        requests in flight
+      </Label>
+      <Label x={700} y={248} anchor="end" size={10} t="faint">
+        time →
+      </Label>
+      <polyline points={path} fill="none" strokeWidth={2} strokeLinejoin="round" style={{ stroke: tone("perf") }} />
+      {refused.map(([x, y]) => (
+        <path key={x} d={`M${x - 4} ${y - 4} l8 8 M${x + 4} ${y - 4} l-8 8`} strokeWidth={1.8} style={{ stroke: tone("accent") }} />
+      ))}
+      <Label x={72} y={120} size={10.5}>
+        slow start: +1 per success
+      </Label>
+      <Label x={180} y={148} size={10.5} t="accent">
+        refused: halve, back off
+      </Label>
+      <Label x={250} y={212} size={10.5}>
+        additive increase
+      </Label>
+      <Label x={488} y={62} size={10.5} t="ink" weight={600} sans>
+        Same 429, product ceiling
+      </Label>
+      <Label x={488} y={80} size={10.5}>
+        refused writes never land
+      </Label>
+      <Label x={488} y={96} size={10.5} t="accent">
+        no landings → saturated
+      </Label>
+      <Label x={488} y={112} size={10.5}>
+        reason stored on the run
+      </Label>
+      <Label x={20} y={272} size={10} t="faint">
+        a refusal counts once per burst · backoff with jitter, capped at 30 s · one pacer per account
+      </Label>
+    </Figure>
+  );
+}
+
+/* ——— Upgrades that fail without an error ——— */
+
+function LifecycleRow({ y, title, sub, start, update, t }: { y: number; title: string; sub: string; start: string; update?: [string, string, Tone]; t: Tone }) {
+  return (
+    <g>
+      <Label x={20} y={y - 4} size={12} t="ink" weight={600} sans>
+        {title}
+      </Label>
+      <Label x={20} y={y + 12} size={10}>
+        {sub}
+      </Label>
+      <line x1={200} x2={700} y1={y} y2={y} style={{ stroke: "var(--rule-strong)" }} />
+      <circle cx={240} cy={y} r={6} strokeWidth={1.4} style={{ fill: "var(--paper)", stroke: tone("ink") }} />
+      <Label x={240} y={y - 14} anchor="middle" size={10} t="ink">
+        {start}
+      </Label>
+      {update && (
+        <>
+          <circle cx={470} cy={y} r={6} strokeWidth={1.4} style={{ fill: "var(--paper)", stroke: tone(update[2]) }} />
+          <Label x={470} y={y - 14} anchor="middle" size={10} t="ink">
+            onUpdate · 3 items
+          </Label>
+          <Label x={470} y={y + 22} anchor="middle" size={10.5} t={update[2]}>
+            {update[1]}
+          </Label>
+        </>
+      )}
+      <Label x={240} y={y + 22} anchor="middle" size={10.5} t={t}>
+        {update ? update[0] : "popup built ✓"}
+      </Label>
+    </g>
+  );
+}
+
+function SuggestionLifecycle() {
+  return (
+    <Figure height={256} label="In Tiptap v2 suggestion items arrive with onStart; in v3 they resolve later, so a renderer that builds its popup only in onStart never shows one; a lazy renderer builds it when items arrive.">
+      <LifecycleRow y={50} title="Tiptap v2" sub="items() is synchronous" start="onStart · 3 items" t="perf" />
+      <LifecycleRow y={132} title="v3, v2-style renderer" sub="items() resolves later" start="onStart · 0 items" update={["no items, no popup", "nothing to update ✗", "accent"]} t="faint" />
+      <LifecycleRow y={214} title="v3, lazy renderer" sub="the fix" start="onStart · 0 items" update={["stay mounted, wait", "build popup now ✓", "perf"]} t="faint" />
+    </Figure>
+  );
+}
+
+/* ——— Handing an agent an email tool ——— */
+
+function SafeFetch() {
+  return (
+    <Figure height={296} label="The attachment fetcher checks that a URL is public, fetches with automatic redirects off, re-validates every redirect hop up to three, refuses private addresses such as the metadata endpoint, and streams the body under a size cap.">
+      <Box x={20} y={40} w={150} h={56} title="URL" sub={["from the model,", "or the next hop"]} />
+      <Arrow pts={[[170, 68], [198, 68]]} />
+      <Box x={200} y={40} w={170} h={56} title="Public host?" sub={["no private or", "link-local range"]} />
+      <Arrow pts={[[370, 68], [418, 68]]} t="perf" />
+      <Label x={394} y={60} anchor="middle" size={10} t="perf">
+        yes
+      </Label>
+      <Box x={420} y={40} w={150} h={56} title="GET" sub={["redirects off"]} />
+      <Arrow pts={[[495, 96], [495, 128]]} />
+      <Box x={420} y={130} w={150} h={56} title="Redirect?" sub={["at most 3 hops"]} />
+      <Arrow pts={[[420, 158], [285, 158], [285, 98]]} t="infra" />
+      <Label x={296} y={150} size={10} t="infra">
+        yes: check again
+      </Label>
+      <Arrow pts={[[570, 158], [598, 158]]} t="perf" />
+      <Box x={600} y={130} w={100} h={56} title="Stream" sub={["cap 15 MB"]} t="perf" filled />
+      <Arrow pts={[[240, 96], [240, 208]]} t="accent" />
+      <Label x={248} y={132} size={10} t="accent">
+        no
+      </Label>
+      <Box x={160} y={210} w={170} h={52} title="Refuse" sub={["e.g. 169.254.169.254"]} t="accent" filled />
+      <Label x={20} y={286} size={10} t="faint">
+        the first version checked only the first URL, then let the HTTP client follow redirects
+      </Label>
+    </Figure>
+  );
+}
+
 export const FIGURES: Record<FigureId, () => ReactElement> = {
+  "query-tuning": QueryTuning,
+  "pay-then-apply": PayThenApply,
+  "one-gate": OneGate,
+  "metering-chokepoint": MeteringChokepoint,
+  "hot-path": HotPath,
+  "placeholder-leak": PlaceholderLeak,
+  "link-funnel": LinkFunnel,
+  "token-budget": TokenBudget,
+  "listener-deque": ListenerDeque,
+  "partial-read": PartialRead,
+  aimd: Aimd,
+  "suggestion-lifecycle": SuggestionLifecycle,
+  "safe-fetch": SafeFetch,
   "payload-diet": PayloadDiet,
   "oom-expansion": OomExpansion,
   "webhook-order": WebhookOrder,

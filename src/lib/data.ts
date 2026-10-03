@@ -129,7 +129,7 @@ export const experiences: Experience[] = [
       "Designed and shipped an AI report canvas that renders answers as versioned, editable documents, exportable to PDF and DOCX and openable in Google Docs, Sheets, Word or Excel.",
       "Rebuilt billing around tiered plans and an append-only credit ledger with per-model cost metering, prepaid top-ups, admin usage alerts and hardened Stripe webhooks.",
       "Cut chat history reload payloads by 93.5% on average in testing, and fixed an out-of-memory crash on large uploads by bounding file extraction and chunking cached reads.",
-      "Built a Go and Temporal pipeline that publishes product catalogues to Google Merchant Center and turns Google's listing issues into one-click fixes.",
+      "Cut the four slowest analytics queries by 80–98% in isolated benchmarks with plan-driven indexing and planner tuning, and load-tested PostgreSQL to separate query cost from contention.",
       "Earlier, built the analytics app's component library, dashboards and reporting widgets, plus the Java services that compute cross-platform marketing metrics.",
     ],
   },
@@ -153,8 +153,8 @@ export const experiences: Experience[] = [
     role: "Trainee Backend Intern",
     period: "Dec 2022 – May 2023",
     description: [
-      "Coded efficient and reusable REST APIs using Node.js and Express, and implemented complex webhooks for bookings from Online Travel Agencies, reducing processing time by 30%.",
-      "Integrated Stripe Elements and APIs, as well as Shift4 iframes, to enhance payment processing — a 20% increase in successful transactions.",
+      "Built backend APIs and booking integrations with online travel agencies in Node.js and Express for a hotel management platform.",
+      "Integrated Stripe and Shift4 card payments.",
       "Handled primary on-calls to support, troubleshoot, monitor, and optimize production systems.",
       "Collaborated with the frontend team to ensure seamless integration between backend and frontend components.",
     ],
@@ -164,8 +164,8 @@ export const experiences: Experience[] = [
     role: "Junior Flutter Developer",
     period: "Sep 2021 – Nov 2021",
     description: [
-      "Integrated backend APIs into a Flutter application, reducing API response time by 25%.",
-      "Implemented new features and bug fixes, contributing to a 15% increase in user engagement.",
+      "Integrated backend REST APIs into a Flutter mobile app.",
+      "Built new features and fixed bugs, working part-time alongside college.",
     ],
   },
 ];
@@ -206,7 +206,7 @@ export const projects: Project[] = [
     cover: "stream",
     summary: "Leaner, steadier AI chat streaming",
     org: "Strique",
-    techStack: ["Python", "FastAPI", "Server-Sent Events", "Redis", "PostgreSQL", "Kubernetes", "Next.js"],
+    techStack: ["Python", "FastAPI", "Server-Sent Events", "Redis", "PostgreSQL", "Next.js"],
     year: "2026",
     period: "Nov 2025 – Sep 2026",
     status: "In production",
@@ -214,21 +214,6 @@ export const projects: Project[] = [
       "Co-built the assistant's streaming chat API, then added heartbeat events, non-blocking media tools and stream-error recovery so long agent turns stopped dropping.",
       "A stream policy that sends the browser only the tool output it renders — the history reload payload fell 93.5% and the live stream 76.6% on average across seven test conversations.",
       "Bounded file extraction and chunked cached reads, so a 5.7 MB spreadsheet that used to crash the chat server now finishes within its memory limit.",
-    ],
-  },
-  {
-    name: "Merchant Center Sync",
-    cover: "merchant",
-    summary: "Scheduled product-feed publishing to Google",
-    org: "Strique",
-    techStack: ["Go", "Temporal", "PostgreSQL", "GORM", "Google Merchant API", "Kubernetes CronJobs"],
-    year: "2026",
-    period: "Sep 2026",
-    status: "In progress",
-    description: [
-      "Google Merchant Center as a catalogue destination through three scheduled jobs: publish changed products every four hours, pull review statuses daily, and delete products that left the feed.",
-      "The publisher paces itself against Google's per-account rate limits, sends the full catalogue only when its data source is new, and keeps products served by other feeds out of its own ledger.",
-      "Matching Google's real attribute spellings means a product missing age group, colour, gender and size shows four separate one-click fixes instead of one merged issue.",
     ],
   },
   {
@@ -288,12 +273,114 @@ export const shipLog: ShipLogEntry[] = [
   {
     date: "2026-09",
     when: "Sep 2026",
-    kind: "feat",
-    title: "Product catalogue publishing to Merchant Center",
-    org: "Strique · Commerce",
+    kind: "fix",
+    title: "One date-window rule for AI audits",
+    org: "Strique · AI assistant",
     summary:
-      "Scheduled publish, review and deletion jobs that sync product catalogues to Google Merchant Center and flag issues merchants can fix.",
-    tags: ["Go", "Temporal", "PostgreSQL"],
+      "“Last N days” now ends on the last complete day, in each ad account's own timezone, so audits stop comparing a partial day with full ones.",
+    tags: ["Python", "LLM"],
+  },
+  {
+    date: "2026-09",
+    when: "Aug – Sep 2026",
+    kind: "feat",
+    title: "Ad preview links that survive to the report",
+    org: "Strique · AI assistant",
+    summary:
+      "Preview links now reach AI reports and exports, with every link checked against the source data and real hyperlinks in Word files.",
+    tags: ["Python", "MCP", "DOCX"],
+  },
+  {
+    date: "2026-08",
+    when: "Aug 2026",
+    kind: "feat",
+    title: "Card-free trials for pilot customers",
+    org: "Strique · Billing",
+    summary:
+      "A staff-only flow puts pilot customers on a paid plan for a week without a card, using a Stripe trial that cancels itself.",
+    tags: ["Stripe", "Next.js"],
+  },
+  {
+    date: "2026-07",
+    when: "Jul – Aug 2026",
+    kind: "perf",
+    title: "Bounded AI report generation time",
+    org: "Strique · AI assistant",
+    summary:
+      "One hard ceiling over the retry cascade, output caps matched to model throughput, and no reasoning spent on formatting.",
+    impact: "10–40 min worst cases → one hard ceiling",
+    tags: ["Python", "asyncio", "LiteLLM"],
+  },
+  {
+    date: "2026-06",
+    when: "May – Jun 2026",
+    kind: "feat",
+    title: "@-mention images across a conversation",
+    org: "Strique · AI assistant",
+    summary:
+      "Users can point at any uploaded or generated image by name, with references that survive regeneration and history reloads.",
+    tags: ["Tiptap", "Python"],
+  },
+  {
+    date: "2026-06",
+    when: "Jun 2026",
+    kind: "fix",
+    title: "Bounded web-research tools",
+    org: "Strique · AI assistant",
+    summary:
+      "Split crawling into map, scrape and bounded crawl, with truncation metadata, so large sites no longer overflow the model's context.",
+    tags: ["Python", "LLM"],
+  },
+  {
+    date: "2025-10",
+    when: "Oct 2025",
+    kind: "infra",
+    title: "Typed Python stubs for shared API contracts",
+    org: "Strique · Platform",
+    summary:
+      "Generated .pyi stubs for the shared protobuf package, with a CI job that builds and installs it on every pull request.",
+    tags: ["Protocol Buffers", "Python"],
+  },
+  {
+    date: "2025-09",
+    when: "Aug – Sep 2025",
+    kind: "perf",
+    title: "Cut slow report queries by 80–98%",
+    org: "Strique · Analytics",
+    summary:
+      "Plan-driven indexing and planner tuning on the four slowest queries, plus load tests that exposed parallel-worker starvation.",
+    impact: "−80–98% query time (benchmarks)",
+    tags: ["PostgreSQL", "pgbench"],
+  },
+  {
+    date: "2025-03",
+    when: "Feb – Mar 2025",
+    kind: "feat",
+    title: "Shopify-accurate net sales",
+    org: "Strique · Analytics",
+    summary:
+      "A net-sales scorecard matching Shopify's definition — tax-inclusive stores, duties, refunds by refund date — with order history re-ingested.",
+    tags: ["Java", "Spring Boot", "SQL"],
+  },
+  {
+    date: "2025-02",
+    when: "Jan – Feb 2025",
+    kind: "fix",
+    title: "Stopped silent overwrites in ad-platform data",
+    org: "Strique · Analytics",
+    summary:
+      "Widened composite keys so keywords shared across ad groups stopped overwriting each other, then re-ingested the affected history.",
+    tags: ["Java", "Protocol Buffers", "PostgreSQL"],
+  },
+  {
+    date: "2024-08",
+    when: "May – Aug 2024",
+    kind: "feat",
+    title: "Protobuf contract for report widgets",
+    org: "Strique · Analytics",
+    summary:
+      "One typed widget envelope, generated into Java and TypeScript, for about 40 widgets across Meta, Google Ads, Amazon, Shopify and GA4.",
+    tags: ["Protocol Buffers", "Java", "TypeScript"],
   },
   {
     date: "2026-09",
@@ -315,17 +402,7 @@ export const shipLog: ShipLogEntry[] = [
     summary:
       "Budgeted every file extractor and cached reads in chunks, so a large spreadsheet no longer crashes the chat server mid-reply.",
     impact: "OOM-killed → 0 restarts in a 1 GiB pod test",
-    tags: ["Python", "Redis", "Kubernetes"],
-  },
-  {
-    date: "2026-09",
-    when: "Sep 2026",
-    kind: "fix",
-    title: "Took auth lookups off the request path",
-    org: "Strique · Platform",
-    summary:
-      "During an auth-provider slowdown, replaced a per-request API lookup with signed session claims so AI routes no longer wait on it.",
-    tags: ["Next.js", "JWT", "React Query"],
+    tags: ["Python", "Redis"],
   },
   {
     date: "2026-09",
@@ -652,7 +729,6 @@ export const shipLog: ShipLogEntry[] = [
     title: "OTA booking webhooks",
     org: "Simulas",
     summary: "Webhook ingestion for bookings from online travel agencies, rebuilt on reusable Express APIs.",
-    impact: "−30% processing time",
     tags: ["Node.js", "Express"],
   },
   {
@@ -662,7 +738,6 @@ export const shipLog: ShipLogEntry[] = [
     title: "Stripe Elements + Shift4 payments",
     org: "Simulas",
     summary: "Card capture and payment flows integrated across two providers.",
-    impact: "+20% successful transactions",
     tags: ["Stripe", "Shift4"],
   },
   {
@@ -672,7 +747,6 @@ export const shipLog: ShipLogEntry[] = [
     title: "Mood-aware music recommendations",
     org: "Verbyl",
     summary: "A mood classifier feeding song recommendations and generated playlists in a Flutter streaming app.",
-    impact: "85% accuracy · +25% retention",
     tags: ["Python", "Flask", "Flutter"],
   },
   {
@@ -682,7 +756,6 @@ export const shipLog: ShipLogEntry[] = [
     title: "API layer for the Nearlikes app",
     org: "Nearlikes",
     summary: "Backend APIs wired into the Flutter client with leaner request handling.",
-    impact: "−25% API response time",
     tags: ["Flutter"],
   },
   {
@@ -699,7 +772,7 @@ export const shipLog: ShipLogEntry[] = [
 export const skills: SkillCategory[] = [
   {
     category: "Languages",
-    technologies: ["TypeScript", "Python", "Java", "Go", "SQL", "Protocol Buffers"],
+    technologies: ["TypeScript", "Python", "Java", "SQL", "Protocol Buffers"],
   },
   {
     category: "Frameworks",
@@ -709,9 +782,11 @@ export const skills: SkillCategory[] = [
       "FastAPI",
       "Spring Boot",
       "Frappe",
-      "Temporal",
       "OpenAI Agents SDK",
       "LiteLLM",
+      "SQLAlchemy",
+      "TanStack Query",
+      "Tiptap",
       "Tailwind CSS",
     ],
   },
@@ -721,17 +796,22 @@ export const skills: SkillCategory[] = [
   },
   {
     category: "Tools",
-    technologies: ["Kubernetes", "Docker", "GitHub Actions", "Stripe", "Sentry", "PostHog", "Playwright", "Storybook"],
+    technologies: [
+      "Docker",
+      "GitHub Actions",
+      "Stripe",
+      "Sentry",
+      "PostHog",
+      "Playwright",
+      "Vitest",
+      "pytest",
+      "SonarQube",
+      "Storybook",
+    ],
   },
 ];
 
 export const achievements: Achievement[] = [
-  {
-    mark: "600+",
-    title: "Competitive programming",
-    description:
-      "Problems solved across LeetCode, Codeforces, and CodeChef, consistently in the top 15% of participants.",
-  },
   {
     mark: "Top 15",
     title: "CoviHacks, 48 hours",
@@ -767,9 +847,9 @@ export const education: Education = {
 
 export const stats: Stat[] = [
   { value: "3+ Yrs", label: "Shipping to production" },
-  { value: "462", label: "PRs merged at Strique" },
-  { value: "521", label: "Code reviews given" },
-  { value: "600+", label: "DSA problems solved" },
+  { value: "93.5%", label: "Smaller chat payloads" },
+  { value: "77.5%", label: "Retrieval recall@5 (RAG)" },
+  { value: "80–98%", label: "Faster slow queries" },
 ];
 
 export const contactInfo = {
